@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import MarketplacePage from "./pages/MarketplacePage";
 import CarbonPage from "./pages/CarbonPage";
 import FinancialPage from "./pages/FinancialPage";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <Navigation />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/carbon" element={<CarbonPage />} />

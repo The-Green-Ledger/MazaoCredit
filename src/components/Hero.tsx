@@ -1,13 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Sprout, TrendingUp, Shield, Leaf } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import heroImage from "@/assets/hero-farmer.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative min-h-screen bg-gradient-hero flex items-center overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-accent rounded-full blur-3xl" />
+    <section className="relative min-h-screen flex items-center overflow-hidden">
+      {/* Hero Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-20"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background/90 to-secondary/30" />
+      
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <Leaf className="absolute top-1/4 right-20 w-20 h-20 text-primary/20 animate-bounce" style={{ animationDuration: '3s' }} />
+        <Leaf className="absolute bottom-1/3 left-32 w-16 h-16 text-secondary/20 animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }} />
       </div>
 
       <div className="container mx-auto px-4 py-20 relative z-10">
@@ -22,8 +37,8 @@ const Hero = () => {
             </h1>
           </div>
 
-          <p className="text-2xl md:text-3xl font-semibold text-foreground">
-            From Seed to Sale, on Any Device
+          <p className="text-2xl md:text-3xl font-semibold text-foreground animate-fade-in">
+            From Seed to Sale, <span className="text-primary animate-pulse">on Any Device</span>
           </p>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -32,11 +47,11 @@ const Hero = () => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6 animate-fade-in">
             <Button 
               size="lg" 
               className="text-lg px-8 shadow-elevated hover:shadow-glow transition-all"
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => navigate('/dashboard')}
             >
               Get Started
             </Button>
@@ -44,7 +59,7 @@ const Hero = () => {
               size="lg" 
               variant="outline" 
               className="text-lg px-8 border-2 hover:bg-primary/5 transition-all"
-              onClick={() => window.location.href = '/marketplace'}
+              onClick={() => navigate('/marketplace')}
             >
               Explore Marketplace
             </Button>

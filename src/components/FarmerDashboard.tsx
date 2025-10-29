@@ -2,13 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package, TrendingUp, AlertCircle, Leaf } from "lucide-react";
+import ListProduceDialog from "@/components/ListProduceDialog";
+import { useState } from "react";
 
 const FarmerDashboard = () => {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  
   const listings = [
     { id: 1, name: "Organic Tomatoes", quantity: "50 kg", price: "KES 80/kg", status: "active", carbon: 12 },
     { id: 2, name: "Sweet Potatoes", quantity: "120 kg", price: "KES 45/kg", status: "pending", carbon: 8 },
     { id: 3, name: "Green Beans", quantity: "30 kg", price: "KES 120/kg", status: "sold", carbon: 15 },
   ];
+
+  const handleEdit = (id: number) => {
+    setEditingId(id);
+    // In a real app, this would open a dialog with the listing data
+    console.log("Edit listing:", id);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -33,10 +43,7 @@ const FarmerDashboard = () => {
                 Manage listings, track sales, and optimize your carbon footprint
               </p>
             </div>
-            <Button className="shadow-soft">
-              <Plus className="w-4 h-4 mr-2" />
-              List New Produce
-            </Button>
+            <ListProduceDialog />
           </div>
 
           {/* Stats Cards */}
@@ -113,7 +120,11 @@ const FarmerDashboard = () => {
                       <Badge className={getStatusColor(listing.status)}>
                         {listing.status}
                       </Badge>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(listing.id)}
+                      >
                         Edit
                       </Button>
                     </div>

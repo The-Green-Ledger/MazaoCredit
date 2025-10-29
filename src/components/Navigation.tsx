@@ -1,11 +1,32 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sprout, LayoutDashboard, ShoppingBasket, Leaf, Wallet, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Sprout, LayoutDashboard, ShoppingBasket, Leaf, Wallet, Menu, X, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
   
   const navItems = [
     { path: "/", label: "Home", icon: Sprout },
@@ -46,6 +67,30 @@ const Navigation = () => {
                 </Link>
               );
             })}
+          </div>
+
+          {/* Auth Section */}
+          <div className="hidden md:flex items-center gap-3">
+            {user ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {user.email?.split('@')[0]}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="shadow-soft"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button asChild className="shadow-soft">
+                <Link to="/auth">Get Started</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

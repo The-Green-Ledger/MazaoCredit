@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Leaf, Phone, MessageSquare } from "lucide-react";
+import { Search, MapPin, Leaf } from "lucide-react";
+import ContactDialog from "@/components/ContactDialog";
+import marketplaceImage from "@/assets/marketplace-hero.jpg";
 
 const Marketplace = () => {
-  const produces = [
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const allProduces = [
     {
       id: 1,
       name: "Organic Tomatoes",
@@ -41,9 +45,22 @@ const Marketplace = () => {
     },
   ];
 
+  // Filter produces based on search query
+  const produces = allProduces.filter(produce => 
+    produce.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    produce.farmer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    produce.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <section className="py-20 bg-background">
-      <div className="container mx-auto px-4">
+    <section className="py-20 bg-background relative">
+      {/* Background decoration */}
+      <div 
+        className="absolute top-0 right-0 w-1/3 h-64 opacity-5"
+        style={{ backgroundImage: `url(${marketplaceImage})`, backgroundSize: 'cover' }}
+      />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -90,6 +107,8 @@ const Marketplace = () => {
               <Input 
                 placeholder="Search for produce, farmers, or location..." 
                 className="pl-10 h-12 shadow-soft"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
@@ -138,14 +157,16 @@ const Marketplace = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button className="flex-1" size="sm">
-                      <Phone className="w-3 h-3 mr-1" />
-                      Call
-                    </Button>
-                    <Button variant="outline" className="flex-1" size="sm">
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      Chat
-                    </Button>
+                    <ContactDialog 
+                      farmerName={produce.farmer}
+                      produceName={produce.name}
+                      type="call"
+                    />
+                    <ContactDialog 
+                      farmerName={produce.farmer}
+                      produceName={produce.name}
+                      type="chat"
+                    />
                   </div>
                 </CardContent>
               </Card>

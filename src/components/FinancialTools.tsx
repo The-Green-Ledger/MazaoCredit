@@ -3,10 +3,42 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DollarSign, Shield, TrendingUp, Users, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const FinancialTools = () => {
   const readinessScore = 78;
   const guarantors = 3;
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleExploreLoan = () => {
+    toast({
+      title: "Loan Matching",
+      description: "Connecting you with microfinance institutions...",
+    });
+  };
+
+  const handleSafetyGuidelines = () => {
+    toast({
+      title: "Safety Alert",
+      description: "Opening weather safety guidelines...",
+    });
+  };
+
+  const handleAddCoverage = () => {
+    toast({
+      title: "Insurance",
+      description: "Adding pest epidemic coverage to your plan...",
+    });
+  };
+
+  const handleFindMatch = () => {
+    toast({
+      title: "Finding Your Match",
+      description: "Searching for the best microfinance options for you...",
+    });
+  };
 
   return (
     <section className="py-20 bg-muted/30">
@@ -61,7 +93,7 @@ const FinancialTools = () => {
                   </div>
                 </div>
 
-                <Button className="w-full shadow-soft">
+                <Button className="w-full shadow-soft" onClick={handleExploreLoan}>
                   <DollarSign className="w-4 h-4 mr-2" />
                   Explore Loan Options
                 </Button>
@@ -109,14 +141,19 @@ const FinancialTools = () => {
                       <p className="text-sm text-muted-foreground mb-3">
                         Hailstorm forecast in your area within 48 hours. Consider protective measures.
                       </p>
-                      <Button variant="destructive" size="sm" className="w-full">
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={handleSafetyGuidelines}
+                      >
                         View Safety Guidelines
                       </Button>
                     </div>
                   </div>
                 </div>
 
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handleAddCoverage}>
                   Add Pest Epidemic Coverage
                 </Button>
               </CardContent>
@@ -133,7 +170,12 @@ const FinancialTools = () => {
                     Get matched with vetted Microfinance Institutions based on your readiness score
                   </p>
                 </div>
-                <Button variant="secondary" size="lg" className="whitespace-nowrap">
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="whitespace-nowrap"
+                  onClick={handleFindMatch}
+                >
                   Find Your Match
                 </Button>
               </div>
