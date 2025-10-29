@@ -33,15 +33,20 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-            <Button size="lg" className="text-lg px-8 shadow-elevated hover:shadow-glow transition-all">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 shadow-elevated hover:shadow-glow transition-all"
+              onClick={() => window.location.href = '/dashboard'}
+            >
               Get Started
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
               className="text-lg px-8 border-2 hover:bg-primary/5 transition-all"
+              onClick={() => window.location.href = '/marketplace'}
             >
-              Learn More
+              Explore Marketplace
             </Button>
           </div>
 

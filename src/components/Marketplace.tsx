@@ -121,12 +121,12 @@ const Marketplace = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center py-3 border-t border-b border-border">
                     <div>
-                      <p className="text-xs text-muted-foreground">Available</p>
-                      <p className="font-semibold text-foreground">{produce.quantity}</p>
+                      <span className="text-xs text-muted-foreground block">Available</span>
+                      <span className="font-semibold text-foreground block">{produce.quantity}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Price</p>
-                      <p className="font-bold text-lg text-primary">{produce.price}</p>
+                      <span className="text-xs text-muted-foreground block">Price</span>
+                      <span className="font-bold text-lg text-primary block">{produce.price}</span>
                     </div>
                   </div>
 
