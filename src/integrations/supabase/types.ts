@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      produce_listings: {
+        Row: {
+          id: string;
+          farmer_id: string;
+          name: string;
+          description: string | null;
+          quantity_kg: number;
+          price_per_kg: number;
+          grade: string | null;
+          created_channel: 'web' | 'ussd' | 'sms';
+          image_url: string | null;
+          voice_meta: string | null;
+          ai_classification: Json | null; // { type: string, confidence: number, flags: string[] }
+          quality_score: number | null;
+          plausibility_flags: string[] | null;
+          geolocation_status: 'confirmed' | 'mismatch' | 'unknown' | null;
+          status: 'draft' | 'pending_review' | 'verified' | 'flagged' | 'suspended';
+          trust_score: number | null;
+          audited: boolean;
+          buyer_feedback_score: number | null;
+          historical_yield_flag: boolean | null;
+          created_at: string;
+          location: string | null;
+        };
+        Insert: Omit<
+          Tables['produce_listings']['Row'],
+          'id' | 'created_at'
+        >;
+        Update: Partial<Tables['produce_listings']['Row']>;
+      };
       [_ in never]: never
     }
     Views: {

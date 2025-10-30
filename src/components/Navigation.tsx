@@ -34,6 +34,8 @@ const Navigation = () => {
     { path: "/marketplace", label: "Marketplace", icon: ShoppingBasket },
     { path: "/carbon", label: "Carbon Tracker", icon: Leaf },
     { path: "/financial", label: "Financial Tools", icon: Wallet },
+    { path: "/partner-dashboard", label: "Partner Dashboard", icon: LayoutDashboard },
+    { path: "/offline-farm.html", label: "Offline Farm", icon: Leaf },
   ];
 
   // Farm Registration will be accessed from Dashboard

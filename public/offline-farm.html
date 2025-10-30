@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Farm Registration — Offline Prototype (No Backend)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<style>
+  :root { --bg: #0b1220; --card: #111a2b; --muted: #93a4c3; --accent: #6dd3ff; }
+  * { box-sizing: border-box; }
+  body, html { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: #eaf0ff; }
+  header { padding: 12px 16px; border-bottom: 1px solid #1f2a44; background: #0e1728; position: sticky; top: 0; z-index: 1000; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.3px; }
+  #container { display: grid; grid-template-columns: 360px 1fr; gap: 12px; padding: 12px; height: calc(100vh - 58px); }
+  #left { background: var(--card); border: 1px solid #1f2a44; border-radius: 14px; padding: 12px; overflow: auto; }
+  #map { height: 100%; width: 100%; border: 1px solid #1f2a44; border-radius: 14px; }
+  fieldset { border: 1px solid #223255; border-radius: 12px; padding: 10px; margin-bottom: 12px; }
+  legend { padding: 0 6px; color: var(--muted); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+  input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #263456; background: #0f1a2c; color: #eaf0ff; }
+  input[type="file"] { width: 100%; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { cursor: pointer; padding: 10px 12px; border-radius: 10px; border: 1px solid #274066; background: #14243e; color: #eaf0ff; font-weight: 600; }
+  .btn:hover { background: #193054; }
+  .btn.primary { background: #0e3a5f; border-color: #1b5d8e; }
+  .btn.primary:hover { background: #13486f; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2a4771; background:#12243e; font-size: 11px; color:#cfe5ff; }
+  .stack { display:flex; gap:8px; flex-wrap:wrap; }
+  .divider { height:1px; background:#203154; margin:10px 0; }
+  .thumb { width: 100%; max-height: 140px; object-fit: contain; border:1px solid #25385f; border-radius:10px; }
+  .note { font-size:11px; color:#9db1d4; }
+  .leaflet-control-layers-expanded { max-height: 260px; overflow: auto; }
+  #areaBox { background:#0f1a2c; border:1px solid #223255; border-radius:10px; padding:8px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  @media (max-width: 900px){ #container { grid-template-columns: 1fr; height: auto; } #map { height: 60vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Farm Registration —</h1>
+</header>
+<div id="container">
+  <aside id="left">
+    <fieldset>
+      <legend>Draw Polygon</legend>
+      <div class="muted">Use the polygon tool on the map. When finished, area is computed below.</div>
+      <div id="areaBox">
+        <div>
+          <div class="muted">Area (feddans)</div>
+          <div id="areaFeddans" style="font-size:18px;font-weight:700;">0.00</div>
+        </div>
+        <div>
+          <div class="muted">Area (ha)</div>
+          <div id="areaHa" style="font-size:18px;font-weight:700;">0.00</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Farmer Details</legend>
+      <label for="farmerName">Farmer Name</label>
+      <input id="farmerName" type="text" placeholder="e.g., Ahmed Musa" />
+      <label for="cooperative">Cooperative (optional)</label>
+      <input id="cooperative" type="text" placeholder="e.g., Blue Nile Coop" />
+      <div class="row">
+        <div>
+          <label for="age">Age</label>
+          <input id="age" type="number" min="15" max="120" placeholder="e.g., 42" />
+        </div>
+        <div>
+          <label for="cropType">Crop Type</label>
+          <select id="cropType">
+            <option value="">Select crop…</option>
+            <option>Sorghum</option>
+            <option>Millet</option>
+            <option>Wheat</option>
+            <option>Sesame</option>
+            <option>Groundnut</option>
+            <option>Cowpea</option>
+            <option>Maize</option>
+            <option>Vegetables</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <label for="idUpload">Upload ID (image)</label>
+      <input id="idUpload" type="file" accept="image/*" />
+      <div class="note">Image stays on your device. When you export the dataset, it can be embedded (Data URL) so you still don't need a server.</div>
+      <img id="idPreview" class="thumb" alt="ID preview" style="display:none;" />
+    </fieldset>
+
+    <div class="stack">
+      <button id="saveFarm" class="btn primary">Save Farm to Map</button>
+      <button id="clearDrawing" class="btn">Clear Current Drawing</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <fieldset>
+      <legend>Dataset</legend>
+      <div class="stack" style="margin-bottom:8px;">
+        <button id="exportBtn" class="btn">Export (.geojson)</button>
+        <button id="exportNoImgBtn" class="btn">Export w/o Images</button>
+        <button id="clearAll" class="btn" title="Remove all saved farms from map & storage">Clear All</button>
+      </div>
+      <label for="importFile">Import GeoJSON</label>
+      <input id="importFile" type="file" accept="application/geo+json,application/json,.geojson" />
+      <div class="note">Tip: The app also auto-saves to your browser (localStorage).</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Filters</legend>
+      <label for="filterCrop">Filter by Crop</label>
+      <select id="filterCrop">
+        <option value="__all__">All crops</option>
+        <option>Sorghum</option>
+        <option>Millet</option>
+        <option>Wheat</option>
+        <option>Sesame</option>
+        <option>Groundnut</option>
+        <option>Cowpea</option>
+        <option>Maize</option>
+        <option>Vegetables</option>
+        <option>Other</option>
+      </select>
+    </fieldset>
+  </aside>
+
+  <main id="map"></main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.11/dist/esri-leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([15.5, 32.5], 8);
+  const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community', maxZoom: 19 }).addTo(map);
+  const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 });
+  const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { attribution: '© Google', maxZoom: 30 });
+  const boundariesOverlay = L.esri.dynamicMapLayer({ url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer', opacity: 1.0 }).addTo(map);
+  L.control.layers({ 'Esri World Imagery (Satellite)': esriImagery, 'OpenStreetMap': osmStandard, 'Google Satellite (High-Res)': googleSat }, { 'Administrative Boundaries & Places (Esri)': boundariesOverlay }, { collapsed: false }).addTo(map);
+  const drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+  const drawControl = new L.Control.Draw({ draw: { polygon: { showArea: false, allowIntersection: false }, polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false }, edit: { featureGroup: drawnItems } });
+  map.addControl(drawControl);
+  let tempLayer = null;
+  const areaFeddansEl = document.getElementById('areaFeddans');
+  const areaHaEl = document.getElementById('areaHa');
+  const saveFarmBtn = document.getElementById('saveFarm');
+  const clearDrawingBtn = document.getElementById('clearDrawing');
+  const farmerNameEl = document.getElementById('farmerName');
+  const cooperativeEl = document.getElementById('cooperative');
+  const ageEl = document.getElementById('age');
+  const cropTypeEl = document.getElementById('cropType');
+  const idUploadEl = document.getElementById('idUpload');
+  const idPreviewEl = document.getElementById('idPreview');
+  const exportBtn = document.getElementById('exportBtn');
+  const exportNoImgBtn = document.getElementById('exportNoImgBtn');
+  const clearAllBtn = document.getElementById('clearAll');
+  const importFileEl = document.getElementById('importFile');
+  const filterCropEl = document.getElementById('filterCrop');
+  const feddan_m2 = 4200;
+  function computeAreas(layer) {
+    const gj = layer.toGeoJSON();
+    const area_m2 = turf.area(gj);
+    return { m2: area_m2, feddans: area_m2 / feddan_m2, hectares: area_m2 / 10000 };
+  }
+  function updateAreaUI(layer) {
+    const a = computeAreas(layer);
+    areaFeddansEl.textContent = a.feddans.toFixed(2);
+    areaHaEl.textContent = a.hectares.toFixed(2);
+  }
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+  }
+  const cropColors = { 'Sorghum': '#8dd3c7', 'Millet': '#ffffb3', 'Wheat': '#bebada', 'Sesame': '#fb8072', 'Groundnut': '#80b1d3', 'Cowpea': '#fdb462', 'Maize': '#b3de69', 'Vegetables': '#fccde5', 'Other': '#d9d9d9' };
+  function styleForCrop(crop) { const c = cropColors[crop] || '#6dd3ff'; return { color: c, weight: 2, fillColor: c, fillOpacity: 0.25 }; }
+  function featurePopupHtml(props, area) {
+    const imgHtml = props.id_image ? `<div style="margin-top:6px;"><img src="${props.id_image}" alt="ID" style="max-width:200px;max-height:120px;border-radius:8px;border:1px solid #223255;"/></div>` : '';
+    return `<div style="font-size:13px;"><div><span class="pill">${props.crop_type || 'N/A'}</span></div><div><strong>Farmer:</strong> ${props.farmer_name || '—'}</div><div><strong>Cooperative:</strong> ${props.cooperative || '—'}</div><div><strong>Age:</strong> ${props.age || '—'}</div><div><strong>Area:</strong> ${area.feddans.toFixed(2)} feddans (${area.hectares.toFixed(2)} ha)</div>${imgHtml}<div class="muted" style="margin-top:6px;">Saved: ${new Date(props.saved_at).toLocaleString()}</div></div>`;
+  }
+  const STORAGE_KEY = 'offline_farm_registry_v1';
+  function saveToLocal(features) { localStorage.setItem(STORAGE_KEY, JSON.stringify({ type: 'FeatureCollection', features })); }
+  function loadFromLocal() { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return { type: 'FeatureCollection', features: [] }; try { return JSON.parse(raw); } catch { return { type: 'FeatureCollection', features: [] }; } }
+  let dataset = loadFromLocal();
+  let farmsLayer = L.geoJSON(dataset, { style: (f) => styleForCrop(f.properties.crop_type), onEachFeature: (feature, layer) => { const area = { m2: feature.properties.area_m2 || 0, feddans: feature.properties.area_feddans || 0, hectares: feature.properties.area_hectares || 0 }; layer.bindPopup(featurePopupHtml(feature.properties, area)); } }).addTo(map);
+  function refreshFarmsLayer() {
+    if (farmsLayer) farmsLayer.remove();
+    const filtered = filterCropEl.value === '__all__' ? dataset.features : dataset.features.filter(f => (f.properties.crop_type || 'Other') === filterCropEl.value);
+    farmsLayer = L.geoJSON({ type: 'FeatureCollection', features: filtered }, { style: (f) => styleForCrop(f.properties.crop_type), onEachFeature: (feature, layer) => { const area = { m2: feature.properties.area_m2 || 0, feddans: feature.properties.area_feddans || 0, hectares: feature.properties.area_hectares || 0 }; layer.bindPopup(featurePopupHtml(feature.properties, area)); } }).addTo(map);
+  }
+  map.on(L.Draw.Event.CREATED, function (e) { if (tempLayer) { drawnItems.removeLayer(tempLayer); tempLayer = null; } tempLayer = e.layer; drawnItems.addLayer(tempLayer); updateAreaUI(tempLayer); });
+  map.on(L.Draw.Event.EDITED, function (e) { if (!tempLayer) return; updateAreaUI(tempLayer); });
+  clearDrawingBtn.addEventListener('click', () => { if (tempLayer) { drawnItems.removeLayer(tempLayer); tempLayer = null; } areaFeddansEl.textContent = '0.00'; areaHaEl.textContent = '0.00'; });
+  idUploadEl.addEventListener('change', async () => { const file = idUploadEl.files?.[0]; if (file) { const url = await readFileAsDataURL(file); idPreviewEl.src = url; idPreviewEl.style.display = 'block'; } else { idPreviewEl.src = ''; idPreviewEl.style.display = 'none'; } });
+  saveFarmBtn.addEventListener('click', async () => {
+    if (!tempLayer) { alert('Please draw the farm boundary first.'); return; }
+    const areas = computeAreas(tempLayer);
+    let idDataUrl = '';
+    if (idPreviewEl && idPreviewEl.src && idPreviewEl.style.display !== 'none') { idDataUrl = idPreviewEl.src; }
+    else if (idUploadEl.files && idUploadEl.files[0]) { idDataUrl = await readFileAsDataURL(idUploadEl.files[0]); }
+    const gj = tempLayer.toGeoJSON();
+    const props = { farmer_name: farmerNameEl.value?.trim() || '', cooperative: cooperativeEl.value?.trim() || '', age: ageEl.value ? Number(ageEl.value) : '', crop_type: cropTypeEl.value || 'Other', id_image: idDataUrl || undefined, area_m2: areas.m2, area_feddans: areas.feddans, area_hectares: areas.hectares, saved_at: new Date().toISOString() };
+    dataset.features.push({ type: 'Feature', geometry: gj.geometry, properties: props });
+    saveToLocal(dataset.features);
+    refreshFarmsLayer();
+    drawnItems.removeLayer(tempLayer); tempLayer = null; areaFeddansEl.textContent = '0.00'; areaHaEl.textContent = '0.00'; farmerNameEl.value = ''; cooperativeEl.value = ''; ageEl.value = ''; cropTypeEl.value = ''; idUploadEl.value = ''; idPreviewEl.src = ''; idPreviewEl.style.display = 'none';
+    alert('Farm saved locally. You can export the dataset as GeoJSON when ready.');
+  });
+  function download(filename, content) { const blob = new Blob([content], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 500); }
+  exportBtn.addEventListener('click', () => { const fc = { type: 'FeatureCollection', features: dataset.features }; download('farms_with_images.geojson', JSON.stringify(fc, null, 2)); });
+  exportNoImgBtn.addEventListener('click', () => { const stripped = dataset.features.map(f => { const { id_image, ...restProps } = f.properties || {}; return { type: 'Feature', geometry: f.geometry, properties: restProps }; }); const fc = { type: 'FeatureCollection', features: stripped }; download('farms_no_images.geojson', JSON.stringify(fc, null, 2)); });
+  clearAllBtn.addEventListener('click', () => { if (!confirm('Clear ALL saved farms from this device?')) return; dataset = { type: 'FeatureCollection', features: [] }; saveToLocal(dataset.features); refreshFarmsLayer(); });
+  importFileEl.addEventListener('change', async () => { const file = importFileEl.files?.[0]; if (!file) return; try { const text = await file.text(); const gj = JSON.parse(text); if (gj.type !== 'FeatureCollection' || !Array.isArray(gj.features)) throw new Error('Invalid GeoJSON'); dataset = gj; saveToLocal(dataset.features); refreshFarmsLayer(); if (farmsLayer && farmsLayer.getBounds && farmsLayer.getLayers && farmsLayer.getLayers().length) { map.fitBounds(farmsLayer.getBounds(), { padding: [20, 20] }); } alert('Import successful.'); } catch (e) { console.error(e); alert('Failed to import GeoJSON.'); } finally { importFileEl.value = ''; } });
+  filterCropEl.addEventListener('change', () => { refreshFarmsLayer(); });
+  setTimeout(() => { if (farmsLayer && farmsLayer.getBounds && farmsLayer.getLayers && farmsLayer.getLayers().length) { map.fitBounds(farmsLayer.getBounds(), { padding: [20, 20] }); } }, 300);
+</script>
+</body>
+</html>

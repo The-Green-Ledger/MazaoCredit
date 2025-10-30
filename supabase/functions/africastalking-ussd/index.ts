@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkPlausibilityAndSeason } from '../../../src/lib/utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,29 @@ serve(async (req) => {
     } else if (text.match(/^1\*[^*]+\*\d+$/)) {
       const parts = text.split('*');
       const produce = parts[1];
-      const quantity = parts[2];
+      const quantity = Number(parts[2]);
+      // Mock farmer profile
+      const farmerProfile = {
+        farm_size_ha: 0.25,
+        main_crop: produce,
+        region: "Central",
+        yield_history: { [produce.toLowerCase()]: [60] } // e.g., 60kg typical yield
+      };
+      const now = new Date();
+      const flags = checkPlausibilityAndSeason(
+        { name: produce, quantity_kg: quantity },
+        farmerProfile,
+        now.getMonth() + 1
+      );
+      if (flags.length > 0) {
+        let msg = 'END Listing review needed:';
+        if (flags.includes('quantity_exceeds_expected_yield'))
+          msg += `\nQuantity much higher than typical for your farm size.`;
+        if (flags.includes('out_of_season'))
+          msg += `\nThis crop is not in season for your region now.`;
+        msg += '\nPlease check and try again or await admin review.';
+        return new Response(msg, { headers: { ...corsHeaders, 'Content-Type': 'text/plain' } });
+      }
       response = `END Your ${produce} (${quantity}kg) has been listed successfully!`;
     } else if (text === '2') {
       response = 'END Current Market Prices:\nTomatoes: KES 80/kg\nCabbage: KES 60/kg\nMaize: KES 45/kg';

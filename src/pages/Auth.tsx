@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Leaf, Sprout } from "lucide-react";
@@ -14,6 +15,8 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [signupRole, setSignupRole] = useState<'farmer'|'buyer'|'microfinancer'|'none'>('none');
+  const [signinRole, setSigninRole] = useState<'farmer'|'buyer'|'microfinancer'|'none'>('none');
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +32,7 @@ const Auth = () => {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: name }
+        data: { full_name: name, role: signupRole !== 'none' ? signupRole : undefined }
       }
     });
 
@@ -58,25 +61,29 @@ const Auth = () => {
     const email = formData.get("signin-email") as string;
     const password = formData.get("signin-password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     setIsLoading(false);
 
-    if (error) {
+    if (signInError) {
       toast({
         variant: "destructive",
         title: "Sign in failed",
-        description: error.message,
+        description: signInError.message,
       });
     } else {
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in.",
-      });
-      navigate("/dashboard");
+      if (signinRole !== 'none') {
+        await supabase.auth.updateUser({ data: { role: signinRole } });
+      }
+      const { data: userData } = await supabase.auth.getUser();
+      const role = (userData.user?.user_metadata as any)?.role as string | undefined;
+      toast({ title: "Welcome back!", description: "You've successfully signed in." });
+      if (role === 'buyer') navigate('/marketplace');
+      else if (role === 'microfinancer') navigate('/partner-dashboard');
+      else navigate('/dashboard');
     }
   };
 
@@ -142,6 +149,17 @@ const Auth = () => {
                     disabled={isLoading}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-role">I am a</Label>
+                  <Select onValueChange={(v)=>setSigninRole(v as any)}>
+                    <SelectTrigger id="signin-role"><SelectValue placeholder="Select role (optional)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="farmer">Farmer (selling)</SelectItem>
+                      <SelectItem value="buyer">Buyer (buying)</SelectItem>
+                      <SelectItem value="microfinancer">Microfinancer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
@@ -183,6 +201,17 @@ const Auth = () => {
                     minLength={6}
                     disabled={isLoading}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-role">I am a</Label>
+                  <Select onValueChange={(v)=>setSignupRole(v as any)}>
+                    <SelectTrigger id="signup-role"><SelectValue placeholder="Select your role" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="farmer">Farmer (selling)</SelectItem>
+                      <SelectItem value="buyer">Buyer (buying)</SelectItem>
+                      <SelectItem value="microfinancer">Microfinancer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create Account"}

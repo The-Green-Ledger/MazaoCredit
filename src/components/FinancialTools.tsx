@@ -5,6 +5,10 @@ import { DollarSign, Shield, TrendingUp, Users, AlertTriangle } from "lucide-rea
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label as UILabel } from "@/components/ui/label";
 
 const FinancialTools = () => {
   const readinessScore = 78;
@@ -33,11 +37,22 @@ const FinancialTools = () => {
     });
   };
 
+  const [creditMethod, setCreditMethod] = useState<'input'|'cash'>('input');
+
   const handleFindMatch = () => {
     toast({
       title: "Finding Your Match",
-      description: "Searching for the best microfinance options for you...",
+      description: `Searching MFIs for ${creditMethod === 'input' ? 'input-on-credit' : 'cash'} offers...`,
     });
+  };
+
+  const [guarantorDialogOpen, setGuarantorDialogOpen] = useState(false);
+  const [guarantorInput, setGuarantorInput] = useState("");
+  const [currentGuarantors, setCurrentGuarantors] = useState(["Grace Kimani", "Otieno Oluoch", "Beatrice Chumba"]); // Demo names
+
+  const handleInviteGuarantor = () => {
+    setGuarantorDialogOpen(false);
+    toast({ title: "Referral sent!", description: "Your network will grow once the new guarantor accepts.", variant: "success" });
   };
 
   return (
@@ -88,15 +103,58 @@ const FinancialTools = () => {
                     <span className="text-sm text-muted-foreground">Social Collateral</span>
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{guarantors}/4 Guarantors</span>
+                      <span className="text-sm font-medium">{currentGuarantors.length}/4 Guarantors</span>
+                      <Dialog open={guarantorDialogOpen} onOpenChange={setGuarantorDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="xs" variant="default">Invite Guarantor</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Invite a Guarantor</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            <input
+                              className="w-full border rounded px-2 py-1"
+                              placeholder="Phone or Email"
+                              value={guarantorInput}
+                              onChange={e => setGuarantorInput(e.target.value)}
+                            />
+                            <Button className="w-full" disabled={!guarantorInput} onClick={handleInviteGuarantor}>
+                              Send Referral
+                            </Button>
+                            <div className="text-xs text-muted-foreground">More guarantors = higher Score & trust. Microfinance uses this when evaluating your loan risk.</div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </div>
-
-                <Button className="w-full shadow-soft" onClick={handleExploreLoan}>
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Explore Loan Options
-                </Button>
+                {/* Display current guarantor names below */}
+                {currentGuarantors.map((g, idx) => (
+                  <div key={idx} className="ml-8 text-xs text-muted-foreground flex items-center gap-2">
+                    <Users className="w-3 h-3" /> <span>{g}</span>
+                  </div>
+                ))}
+                <div className="space-y-3">
+                  <div className="text-sm font-semibold">Credit Application Choice</div>
+                  <RadioGroup value={creditMethod} onValueChange={(v)=>setCreditMethod(v as any)} className="grid grid-cols-2 gap-3">
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="input" id="credit-input" />
+                        <UILabel htmlFor="credit-input">Input on credit</UILabel>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Seeds/fertilizer/inputs financed.</div>
+                    </div>
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cash" id="credit-cash" />
+                        <UILabel htmlFor="credit-cash">Cash</UILabel>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Direct cash disbursement.</div>
+                    </div>
+                  </RadioGroup>
+                  <div className="text-xs text-muted-foreground">Selected: <span className="font-medium">{creditMethod === 'input' ? 'Input on credit' : 'Cash'}</span></div>
+                </div>
               </CardContent>
             </Card>
 
