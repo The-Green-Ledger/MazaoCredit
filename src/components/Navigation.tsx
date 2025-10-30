@@ -36,6 +36,8 @@ const Navigation = () => {
     { path: "/financial", label: "Financial Tools", icon: Wallet },
   ];
 
+  // Farm Registration will be accessed from Dashboard
+
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-soft">
       <div className="container mx-auto px-4">

@@ -1,1 +1,22 @@
 project_id = "kvttzsgtkfounbpynypx"
+
+[functions.financial-readiness]
+verify_jwt = false
+
+[functions.carbon-analysis]
+verify_jwt = false
+
+[functions.market-predictions]
+verify_jwt = false
+
+[functions.farmer-chatbot]
+verify_jwt = false
+
+[functions.africastalking-ussd]
+verify_jwt = false
+
+[functions.africastalking-sms]
+verify_jwt = false
+
+[functions.africastalking-airtime]
+verify_jwt = false
