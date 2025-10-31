@@ -19,7 +19,6 @@ router.post('/register', async (req, res) => {
       name: payload.name,
       email: payload.email,
       role: payload.role,
-      gender: payload.gender,
       farmData: payload.farmData || {},
       financialData: payload.financialData || {},
       locationData: payload.locationData || {},
@@ -226,62 +225,63 @@ router.get('/credit-analysis/:userId', async (req, res) => {
       }
     }
 
-  // 3) If still not found, compute from stored profile and persist
-  if (!analysis) {
-    try {
-      const { data: user } = await supabase
-        .from('users')
-        .select('profile')
-        .eq('id', userId)
-        .single();
-      const p = user?.profile || AIModelIntegration.getProfile(userId) || {};
-      const farmerData = {
-        farmData: p.farmData || {},
-        financialData: p.financialData || {},
-        locationData: p.locationData || {},
-        productionData: p.productionData || {},
-        historicalData: p.historicalData || {},
-      };
-
+    // 3) If still not found, compute from stored profile and persist
+    if (!analysis) {
       try {
-        const pyResult = await runPythonCreditPredictor({
-          farmData: farmerData.farmData,
-          locationData: farmerData.locationData,
-          mpesaData: farmerData.mpesaData,
-          financialData: farmerData.financialData
-        });
-        if (pyResult?.success && pyResult.data?.creditAnalysis) {
-          analysis = pyResult.data.creditAnalysis;
-        }
-      } catch {}
-      if (!analysis) {
-        analysis = await AICreditScoring.analyzeFarmerCredit(farmerData);
-      }
+        const { data: user } = await supabase
+          .from('users')
+          .select('profile')
+          .eq('id', userId)
+          .single();
+        const p = user?.profile || AIModelIntegration.getProfile(userId) || {};
+        const farmerData = {
+          farmData: p.farmData || {},
+          financialData: p.financialData || {},
+          locationData: p.locationData || {},
+          productionData: p.productionData || {},
+          historicalData: p.historicalData || {},
+        };
 
-      if (analysis) {
-        AIModelIntegration.setCreditAnalysis(userId, analysis);
+        // Prefer Python model
         try {
-          if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-            await supabase
-              .from('users')
-              .update({
-                profile: {
-                  ...p,
-                  creditScore: analysis.creditScore,
-                  creditAnalysis: analysis,
-                  lastCreditUpdate: new Date().toISOString(),
-                }
-              })
-              .eq('id', userId);
+          const pyResult = await runPythonCreditPredictor({
+            farmData: farmerData.farmData,
+            locationData: farmerData.locationData,
+            mpesaData: farmerData.mpesaData,
+            financialData: farmerData.financialData
+          });
+          if (pyResult?.success && pyResult.data?.creditAnalysis) {
+            analysis = pyResult.data.creditAnalysis;
           }
         } catch {}
-      }
-    } catch {}
-  }
+        if (!analysis) {
+          analysis = await AICreditScoring.analyzeFarmerCredit(farmerData);
+        }
 
-  if (!analysis) {
-    return res.status(404).json({ success: false, message: 'No credit analysis found' });
-  }
+        if (analysis) {
+          AIModelIntegration.setCreditAnalysis(userId, analysis);
+          try {
+            if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+              await supabase
+                .from('users')
+                .update({
+                  profile: {
+                    ...p,
+                    creditScore: analysis.creditScore,
+                    creditAnalysis: analysis,
+                    lastCreditUpdate: new Date().toISOString(),
+                  }
+                })
+                .eq('id', userId);
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    if (!analysis) {
+      return res.status(404).json({ success: false, message: 'No credit analysis found' });
+    }
 
     res.json({ success: true, data: { userId, creditAnalysis: analysis } });
   } catch (error) {
