@@ -72,7 +72,7 @@ const FinancialTools = () => {
       const uid = await primeUserId();
       if (!uid) return;
       try {
-        const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/credit-analysis/${uid}`);
+        const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${uid}`);
         const json = await resp.json();
         if (json.success && json.data?.creditAnalysis) {
           const ca = json.data.creditAnalysis;
@@ -123,7 +123,7 @@ const FinancialTools = () => {
           locationData: { region: 'Unknown', country: 'Kenya' },
           mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
         };
-        const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/credit-analysis/${uid}`, {
+        const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${uid}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -174,7 +174,7 @@ const FinancialTools = () => {
         locationData: { region: 'Unknown', country: 'Kenya' },
         mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
       };
-      const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/credit-analysis/${uid}`, {
+      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
