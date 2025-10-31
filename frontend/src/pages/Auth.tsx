@@ -68,6 +68,7 @@ const Auth = () => {
       if (authData.user) {
         // Create user profile in our backend
         const userProfile = {
+          userId: authData.user.id,
           name,
           email,
           password, // This will be hashed by the backend
