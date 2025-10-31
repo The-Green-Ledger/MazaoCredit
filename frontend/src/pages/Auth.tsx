@@ -49,12 +49,13 @@ const Auth = () => {
     const name = formData.get("name") as string;
 
     try {
+      const siteUrl = import.meta.env.VITE_SITE_URL || 'https://mazao-credit.netlify.app';
       // First, create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${siteUrl}/`,
           data: { 
             full_name: name, 
             role: signupRole !== 'none' ? signupRole : undefined 
