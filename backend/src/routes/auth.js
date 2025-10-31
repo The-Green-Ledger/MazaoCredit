@@ -141,10 +141,32 @@ router.post('/credit-analysis/:userId', async (req, res) => {
 router.get('/credit-analysis/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const analysis = AIModelIntegration.getCreditAnalysis(userId);
+    // 1) Try in-memory cache first for speed
+    let analysis = AIModelIntegration.getCreditAnalysis(userId);
+
+    // 2) If not found, try to load from Supabase profile and hydrate cache
+    if (!analysis) {
+      try {
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+          const { data: user, error } = await supabase
+            .from('users')
+            .select('profile')
+            .eq('id', userId)
+            .single();
+          if (!error && user?.profile?.creditAnalysis) {
+            analysis = user.profile.creditAnalysis;
+            AIModelIntegration.setCreditAnalysis(userId, analysis);
+          }
+        }
+      } catch (e) {
+        // ignore persistence errors to keep endpoint resilient
+      }
+    }
+
     if (!analysis) {
       return res.status(404).json({ success: false, message: 'No credit analysis found' });
     }
+
     res.json({ success: true, data: { userId, creditAnalysis: analysis } });
   } catch (error) {
     res.status(500).json({
