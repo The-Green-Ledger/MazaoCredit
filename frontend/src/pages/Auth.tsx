@@ -321,7 +321,7 @@ const Auth = () => {
               <Sprout className="w-12 h-12 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold">Sprout & Sell</CardTitle>
+          <CardTitle className="text-3xl font-bold">Mazao Credit</CardTitle>
           <CardDescription className="text-base">
             Join the resilient farmer community
           </CardDescription>
