@@ -47,6 +47,7 @@ const Auth = () => {
     const email = formData.get("signup-email") as string;
     const password = formData.get("signup-password") as string;
     const name = formData.get("name") as string;
+    const gender = (formData.get("gender") as string) || "";
 
     try {
       const siteUrl = import.meta.env.VITE_SITE_URL || 'https://mazao-credit.netlify.app';
@@ -73,6 +74,7 @@ const Auth = () => {
           email,
           password, // This will be hashed by the backend
           role: signupRole,
+          gender,
           ...(signupRole === 'farmer' && {
             farmData: {
               farmSize: parseFloat(farmerData.farmSize || "0"),
@@ -344,6 +346,19 @@ const Auth = () => {
                     required
                     disabled={isLoading}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select name="gender">
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="other">Other / Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>

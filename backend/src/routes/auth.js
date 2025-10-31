@@ -17,6 +17,7 @@ router.post('/register', async (req, res) => {
       name: payload.name,
       email: payload.email,
       role: payload.role,
+      gender: payload.gender,
       farmData: payload.farmData || {},
       financialData: payload.financialData || {},
       locationData: payload.locationData || {},
