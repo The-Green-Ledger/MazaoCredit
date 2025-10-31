@@ -103,22 +103,39 @@ const Auth = () => {
           throw new Error(result.message || 'Failed to create user profile');
         }
 
+        // Auto-run credit analysis for farmers using provided inputs (simplified flow)
+        if (signupRole === 'farmer') {
+          try {
+            const body = {
+              farmData: {
+                farmSize: parseFloat(farmerData.farmSize || '0'),
+                farmType: farmerData.farmType || 'traditional',
+                yearsExperience: parseInt(farmerData.yearsExperience || '0'),
+                mainCrops: farmerData.mainCrops || []
+              },
+              financialData: {
+                annualRevenue: parseFloat(farmerData.annualRevenue || '0')
+              },
+              locationData: {
+                region: farmerData.location || '',
+                country: 'Kenya'
+              }
+            };
+            await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${authData.user.id}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+          } catch {}
+        }
+
         toast({
           title: "Success!",
           description: "Account created successfully! Check your email to verify your account.",
         });
 
-        // If farmer, navigate to farm registration for more details
-        if (signupRole === 'farmer') {
-          navigate('/farm-registration', { 
-            state: { 
-              userId: authData.user.id,
-              farmerData: result.data 
-            } 
-          });
-        } else {
-          navigate("/");
-        }
+        // Go straight to dashboard for simplicity
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({

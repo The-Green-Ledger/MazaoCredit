@@ -565,7 +565,7 @@ const FarmRegistration = () => {
                   <Download className="w-4 h-4 mr-2" />
                   Export Boundary
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1">
+                <Button onClick={async () => { await calculateCreditScore(); handleSubmit(); }} className="flex-1">
                   <Upload className="w-4 h-4 mr-2" />
                   Complete Registration
                 </Button>
