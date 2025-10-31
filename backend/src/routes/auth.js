@@ -23,19 +23,49 @@ router.post('/register', async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
+    // Run credit analysis from registration data (Python preferred)
+    let creditAnalysis;
+    try {
+      const pyResult = await runPythonCreditPredictor({
+        farmData: profile.farmData,
+        locationData: profile.locationData,
+        mpesaData: profile.mpesaData,
+        financialData: profile.financialData
+      });
+      if (pyResult && pyResult.success && pyResult.data && pyResult.data.creditAnalysis) {
+        creditAnalysis = pyResult.data.creditAnalysis;
+      }
+    } catch (e) {
+      console.warn('Python predictor failed during register, using JS:', e.message);
+    }
+    if (!creditAnalysis) {
+      creditAnalysis = await AICreditScoring.analyzeFarmerCredit(profile);
+    }
+
+    // Attach analysis to profile
+    const augmentedProfile = {
+      ...profile,
+      creditScore: creditAnalysis?.creditScore,
+      creditAnalysis,
+      lastCreditUpdate: new Date().toISOString(),
+    };
+
     // Store in-memory for demo/mock
-    AIModelIntegration.saveProfile(userId, profile);
+    AIModelIntegration.saveProfile(userId, augmentedProfile);
+    if (creditAnalysis) {
+      AIModelIntegration.setCreditAnalysis(userId, creditAnalysis);
+    }
 
     // Try to persist to Supabase if configured
     try {
       if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-        await supabase.from('users').upsert({ id: userId, profile }, { onConflict: 'id' });
+        await supabase.from('users').upsert({ id: userId, profile: augmentedProfile }, { onConflict: 'id' });
       }
     } catch (e) {
       // ignore if persistence is unavailable
     }
 
-    res.json({ success: true, data: { userId, profile } });
+    res.json({ success: true, data: { userId, profile: augmentedProfile, creditAnalysis } });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -80,7 +110,28 @@ router.put('/profile/farmer', async (req, res) => {
 router.post('/credit-analysis/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const farmerData = req.body;
+    let farmerData = req.body || {};
+
+    // If no body provided, derive from persisted profile
+    if (!farmerData || Object.keys(farmerData).length === 0) {
+      try {
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+          const { data: user } = await supabase
+            .from('users')
+            .select('profile')
+            .eq('id', userId)
+            .single();
+          const p = user?.profile || AIModelIntegration.getProfile(userId) || {};
+          farmerData = {
+            farmData: p.farmData || {},
+            financialData: p.financialData || {},
+            locationData: p.locationData || {},
+            productionData: p.productionData || {},
+            historicalData: p.historicalData || {},
+          };
+        }
+      } catch {}
+    }
 
     let creditAnalysis;
     // Prefer Python model artifacts if available; fallback to JS+OpenAI
@@ -163,9 +214,62 @@ router.get('/credit-analysis/:userId', async (req, res) => {
       }
     }
 
-    if (!analysis) {
-      return res.status(404).json({ success: false, message: 'No credit analysis found' });
-    }
+  // 3) If still not found, compute from stored profile and persist
+  if (!analysis) {
+    try {
+      const { data: user } = await supabase
+        .from('users')
+        .select('profile')
+        .eq('id', userId)
+        .single();
+      const p = user?.profile || AIModelIntegration.getProfile(userId) || {};
+      const farmerData = {
+        farmData: p.farmData || {},
+        financialData: p.financialData || {},
+        locationData: p.locationData || {},
+        productionData: p.productionData || {},
+        historicalData: p.historicalData || {},
+      };
+
+      try {
+        const pyResult = await runPythonCreditPredictor({
+          farmData: farmerData.farmData,
+          locationData: farmerData.locationData,
+          mpesaData: farmerData.mpesaData,
+          financialData: farmerData.financialData
+        });
+        if (pyResult?.success && pyResult.data?.creditAnalysis) {
+          analysis = pyResult.data.creditAnalysis;
+        }
+      } catch {}
+      if (!analysis) {
+        analysis = await AICreditScoring.analyzeFarmerCredit(farmerData);
+      }
+
+      if (analysis) {
+        AIModelIntegration.setCreditAnalysis(userId, analysis);
+        try {
+          if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+            await supabase
+              .from('users')
+              .update({
+                profile: {
+                  ...p,
+                  creditScore: analysis.creditScore,
+                  creditAnalysis: analysis,
+                  lastCreditUpdate: new Date().toISOString(),
+                }
+              })
+              .eq('id', userId);
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+
+  if (!analysis) {
+    return res.status(404).json({ success: false, message: 'No credit analysis found' });
+  }
 
     res.json({ success: true, data: { userId, creditAnalysis: analysis } });
   } catch (error) {

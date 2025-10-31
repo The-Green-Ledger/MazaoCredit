@@ -89,25 +89,11 @@ const FinancialTools = () => {
         const { data: { session } } = await supabase.auth.getSession();
         const uid = session?.user?.id;
         if (!uid) return;
-        const { data } = await supabase
-          .from('farm_records')
-          .select('type,amount')
-          .eq('user_id', uid);
-        let inflows = 0, outflows = 0, inflowCount = 0;
-        for (const r of (data || []) as any[]) {
-          if (r.type === 'income') { inflows += Number(r.amount) || 0; inflowCount += 1; }
-          if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
-        }
-        const body = {
-          farmData: { farmSize: inflows > 0 ? 1 : 0, farmType: 'unknown', yearsExperience: 0 },
-          financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0 },
-          locationData: { region: 'Unknown', country: 'Kenya' },
-          mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
-        };
         const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${uid}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          // empty body -> backend derives from registration/profile data
+          body: JSON.stringify({})
         });
         const json = await resp.json();
         if (json.success && json.data?.creditAnalysis) {
@@ -136,25 +122,10 @@ const FinancialTools = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const uid = session?.user?.id;
       if (!uid) return;
-      const { data } = await supabase
-        .from('farm_records')
-        .select('type,amount')
-        .eq('user_id', uid);
-      let inflows = 0, outflows = 0, inflowCount = 0;
-      for (const r of (data || []) as any[]) {
-        if (r.type === 'income') { inflows += Number(r.amount) || 0; inflowCount += 1; }
-        if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
-      }
-      const body = {
-        farmData: { farmSize: inflows > 0 ? 1 : 0, farmType: 'unknown', yearsExperience: 0 },
-        financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0 },
-        locationData: { region: 'Unknown', country: 'Kenya' },
-        mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
-      };
       const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({})
       });
       const json = await resp.json();
       if (json.success && json.data?.creditAnalysis) {
