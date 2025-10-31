@@ -31,10 +31,10 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/news" element={<News />} />
-          <Route path="/carbon" element={<ProtectedRoute><CarbonPage /></ProtectedRoute>} />
-          <Route path="/financial" element={<ProtectedRoute><FinancialPage /></ProtectedRoute>} />
-          <Route path="/farm-registration" element={<ProtectedRoute><FarmRegistration /></ProtectedRoute>} />
-          <Route path="/records" element={<ProtectedRoute><FarmRecords /></ProtectedRoute>} />
+          <Route path="/carbon" element={<CarbonPage />} />
+          <Route path="/financial" element={<FinancialPage />} />
+          <Route path="/farm-registration" element={<FarmRegistration />} />
+          <Route path="/records" element={<FarmRecords />} />
           {/* Partner Dashboard removed */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

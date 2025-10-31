@@ -119,19 +119,10 @@ const FarmRegistration = () => {
   };
 
   const calculateCreditScore = async () => {
-    if (!userId) {
-      toast({
-        title: "User Not Found",
-        description: "Please complete the initial registration first",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsCalculatingCredit(true);
 
     try {
-      const creditData = {
+      const farmerPayload = {
         farmData: {
           farmSize: parseFloat(formData.farmSize || "0"),
           farmType: formData.cropType,
@@ -153,29 +144,33 @@ const FarmRegistration = () => {
         }
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(creditData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setCreditScore(result.data.creditAnalysis.creditScore);
-        try {
-          localStorage.setItem('userId', String(userId));
-          localStorage.setItem('creditAnalysis', JSON.stringify(result.data.creditAnalysis));
-        } catch {}
-        toast({
-          title: "Credit Assessment Complete",
-          description: `Your credit score: ${result.data.creditAnalysis.creditScore}/100`,
+      // If we have a userId, persist under that user; else, do ephemeral scoring
+      let resultJson: any = null;
+      if (userId) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/auth/credit-analysis/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(farmerPayload),
         });
+        resultJson = await response.json();
+        if (!resultJson.success) throw new Error(resultJson.message || 'Failed to compute');
       } else {
-        throw new Error(result.message);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://mazao-credit-backend.onrender.com'}/api/ai/credit-score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ farmerData: farmerPayload }),
+        });
+        resultJson = await response.json();
+        if (!resultJson.success) throw new Error(resultJson.message || 'Failed to compute');
+        // Normalize format
+        resultJson.data = { creditAnalysis: resultJson.data.creditAnalysis };
       }
+
+      setCreditScore(resultJson.data.creditAnalysis.creditScore);
+      toast({
+        title: "Credit Assessment Complete",
+        description: `Your credit score: ${resultJson.data.creditAnalysis.creditScore}/100`,
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
