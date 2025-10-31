@@ -186,6 +186,11 @@ const FinancialTools = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Access microfinance, build your credit score, and protect your crops with parametric insurance
             </p>
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" onClick={() => navigate('/farm-registration')}>
+                Complete Farm Registration
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

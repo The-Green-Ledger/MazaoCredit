@@ -36,6 +36,7 @@ const Navigation = () => {
     { path: "/carbon", label: "Carbon Tracker", icon: Leaf },
     { path: "/financial", label: "Financial Tools", icon: Wallet },
     { path: "/records", label: "Farm Records", icon: Wallet },
+    { path: "/farm-registration", label: "Farm Registration", icon: LayoutDashboard },
     
   ];
 
