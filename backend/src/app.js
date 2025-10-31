@@ -42,8 +42,16 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'http://127.0.0.1:8080',
   'http://127.0.0.1:5173',
-  'https://sprout-sell.vercel.app'
+  'https://sprout-sell.vercel.app',
+  'https://mazao-credit.netlify.app'
 ];
+
+// Allow additional origins via env (comma-separated), e.g. "https://app.netlify.app,https://preview--site.netlify.app"
+if (process.env.ALLOWED_ORIGINS) {
+  for (const o of process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) {
+    if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+  }
+}
 
 app.use(cors({
   origin: function (origin, callback) {
