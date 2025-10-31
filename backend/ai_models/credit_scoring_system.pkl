@@ -1,0 +1,1 @@
+../ai/models/credit_scoring_system.pkl
