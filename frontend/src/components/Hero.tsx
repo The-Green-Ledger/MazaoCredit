@@ -33,17 +33,16 @@ const Hero = () => {
               <Sprout className="w-8 h-8 text-primary-foreground" />
             </div>
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Sprout & Sell
+              Mazao Credit
             </h1>
           </div>
 
           <p className="text-2xl md:text-3xl font-semibold text-foreground animate-fade-in">
-            From Seed to Sale, <span className="text-primary animate-pulse">on Any Device</span>
+            Shamba lako <span className="text-primary animate-pulse">banki yako</span>
           </p>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            The unified AgriTech platform connecting small-scale farmers directly to markets 
-            with critical financial, risk, and sustainability tools for maximum resilience.
+            Credit scoring and finance tools tailored for smallholder farmers, leveraging yield data and weather insights.
           </p>
 
           {/* CTA Buttons */}

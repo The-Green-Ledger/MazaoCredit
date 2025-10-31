@@ -32,10 +32,11 @@ const Navigation = () => {
     { path: "/", label: "Home", icon: Sprout },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/marketplace", label: "Marketplace", icon: ShoppingBasket },
+    { path: "/news", label: "News", icon: LayoutDashboard },
     { path: "/carbon", label: "Carbon Tracker", icon: Leaf },
     { path: "/financial", label: "Financial Tools", icon: Wallet },
-    { path: "/partner-dashboard", label: "Partner Dashboard", icon: LayoutDashboard },
-    { path: "/offline-farm.html", label: "Offline Farm", icon: Leaf },
+    { path: "/records", label: "Farm Records", icon: Wallet },
+    
   ];
 
   // Farm Registration will be accessed from Dashboard
@@ -50,7 +51,7 @@ const Navigation = () => {
               <Sprout className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Sprout & Sell
+              Mazao Credit
             </span>
           </Link>
 

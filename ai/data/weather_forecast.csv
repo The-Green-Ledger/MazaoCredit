@@ -1,0 +1,4 @@
+county,crop,drought_risk,flood_risk,hail_risk
+nakuru,maize,0.2,0.1,0.05
+nairobi,beans,0.1,0.1,0.02
+machakos,tomatoes,0.3,0.05,0.03

@@ -7,7 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+node_modules/
+backend/node_modules/
+frontend/node_modules/
 dist
 dist-ssr
 *.local
@@ -22,3 +24,38 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python virtualenvs & caches
+ai/venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+supabase/.env
+
+# Builds / Bundles
+frontend/dist/
+backend/dist/
+
+# Tooling
+.eslintcache
+.turbo/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Supabase generated
+supabase/.temp/
+
+# Vite cache
+frontend/.vite/

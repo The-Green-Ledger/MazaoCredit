@@ -165,6 +165,10 @@ const FarmRegistration = () => {
 
       if (result.success) {
         setCreditScore(result.data.creditAnalysis.creditScore);
+        try {
+          localStorage.setItem('userId', String(userId));
+          localStorage.setItem('creditAnalysis', JSON.stringify(result.data.creditAnalysis));
+        } catch {}
         toast({
           title: "Credit Assessment Complete",
           description: `Your credit score: ${result.data.creditAnalysis.creditScore}/100`,

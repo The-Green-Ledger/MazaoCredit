@@ -1,18 +1,25 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Shield, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import { DollarSign, Shield, TrendingUp, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label as UILabel } from "@/components/ui/label";
 
 const FinancialTools = () => {
-  const readinessScore = 78;
-  const guarantors = 3;
+  const [readinessScore, setReadinessScore] = useState<number>(78);
+  const [creditScore, setCreditScore] = useState<number | null>(null);
+  const [strengths, setStrengths] = useState<string[]>([]);
+  const [weaknesses, setWeaknesses] = useState<string[]>([]);
+  const [interestRate, setInterestRate] = useState<number | null>(null);
+  const [recommendedLoanAmount, setRecommendedLoanAmount] = useState<number | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -46,13 +53,149 @@ const FinancialTools = () => {
     });
   };
 
-  const [guarantorDialogOpen, setGuarantorDialogOpen] = useState(false);
-  const [guarantorInput, setGuarantorInput] = useState("");
-  const [currentGuarantors, setCurrentGuarantors] = useState(["Grace Kimani", "Otieno Oluoch", "Beatrice Chumba"]); // Demo names
+  
 
-  const handleInviteGuarantor = () => {
-    setGuarantorDialogOpen(false);
-    toast({ title: "Referral sent!", description: "Your network will grow once the new guarantor accepts.", variant: "success" });
+  useEffect(() => {
+    // Load latest credit analysis (from backend or localStorage)
+    const primeUserId = async (): Promise<string | undefined> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (uid) {
+        try { if (!localStorage.getItem('userId')) localStorage.setItem('userId', uid); } catch {}
+        return uid;
+      }
+      const local = localStorage.getItem('userId') || undefined;
+      return local;
+    };
+
+    const loadFromBackend = async (): Promise<boolean> => {
+      const uid = await primeUserId();
+      if (!uid) return;
+      try {
+        const resp = await fetch(`http://localhost:5000/api/auth/credit-analysis/${uid}`);
+        const json = await resp.json();
+        if (json.success && json.data?.creditAnalysis) {
+          const ca = json.data.creditAnalysis;
+          setCreditScore(ca.creditScore ?? null);
+          setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+          setStrengths(ca.strengths || []);
+          setWeaknesses(ca.weaknesses || []);
+          setInterestRate(ca.interestRate ?? null);
+          setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
+          return true;
+        }
+      } catch {}
+      return false;
+    };
+
+    const loadFromLocal = () => {
+      try {
+        const raw = localStorage.getItem('creditAnalysis');
+        if (!raw) return;
+        const ca = JSON.parse(raw);
+        setCreditScore(ca.creditScore ?? null);
+        setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+        setStrengths(ca.strengths || []);
+        setWeaknesses(ca.weaknesses || []);
+        setInterestRate(ca.interestRate ?? null);
+        setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
+      } catch {}
+    };
+
+    const requestFreshAnalysisAggregatingRecords = async () => {
+      try {
+        setLoadingAnalysis(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const uid = session?.user?.id || localStorage.getItem('userId');
+        if (!uid) return;
+        const { data } = await supabase
+          .from('farm_records')
+          .select('type,amount')
+          .eq('user_id', uid);
+        let inflows = 0, outflows = 0, inflowCount = 0;
+        for (const r of (data || []) as any[]) {
+          if (r.type === 'income') { inflows += Number(r.amount) || 0; inflowCount += 1; }
+          if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
+        }
+        const body = {
+          farmData: { farmSize: 1, farmType: 'maize', yearsExperience: 1 },
+          financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0, financialReadiness: 5 },
+          locationData: { region: 'Unknown', country: 'Kenya' },
+          mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
+        };
+        const resp = await fetch(`http://localhost:5000/api/auth/credit-analysis/${uid}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const json = await resp.json();
+        if (json.success && json.data?.creditAnalysis) {
+          const ca = json.data.creditAnalysis;
+          setCreditScore(ca.creditScore ?? null);
+          setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+          setStrengths(ca.strengths || []);
+          setWeaknesses(ca.weaknesses || []);
+          setInterestRate(ca.interestRate ?? null);
+          setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
+          try { localStorage.setItem('creditAnalysis', JSON.stringify(ca)); } catch {}
+        }
+      } finally {
+        setLoadingAnalysis(false);
+      }
+    };
+
+    (async () => {
+      const ok = await loadFromBackend();
+      if (!ok) {
+        loadFromLocal();
+        await requestFreshAnalysisAggregatingRecords();
+      }
+    })();
+  }, []);
+
+  const refreshAnalysis = async () => {
+    try {
+      setLoadingAnalysis(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id || localStorage.getItem('userId');
+      if (!uid) return;
+      const { data } = await supabase
+        .from('farm_records')
+        .select('type,amount')
+        .eq('user_id', uid);
+      let inflows = 0, outflows = 0, inflowCount = 0;
+      for (const r of (data || []) as any[]) {
+        if (r.type === 'income') { inflows += Number(r.amount) || 0; inflowCount += 1; }
+        if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
+      }
+      const body = {
+        farmData: { farmSize: 1, farmType: 'maize', yearsExperience: 1 },
+        financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0, financialReadiness: 5 },
+        locationData: { region: 'Unknown', country: 'Kenya' },
+        mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
+      };
+      const resp = await fetch(`http://localhost:5000/api/auth/credit-analysis/${uid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await resp.json();
+      if (json.success && json.data?.creditAnalysis) {
+        const ca = json.data.creditAnalysis;
+        setCreditScore(ca.creditScore ?? null);
+        setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+        setStrengths(ca.strengths || []);
+        setWeaknesses(ca.weaknesses || []);
+        setInterestRate(ca.interestRate ?? null);
+        setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
+        try { localStorage.setItem('creditAnalysis', JSON.stringify(ca)); } catch {}
+        toast({ title: 'Credit analysis updated' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Failed to update credit analysis', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingAnalysis(false);
+    }
   };
 
   return (
@@ -75,10 +218,10 @@ const FinancialTools = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
-                  Financial Readiness Score
+                  Financial Readiness
                 </CardTitle>
                 <CardDescription>
-                  AI-powered score based on transaction history, climate data, and social collateral
+                  Derived from your AI credit analysis and records
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -90,51 +233,7 @@ const FinancialTools = () => {
                   <Progress value={readinessScore} className="h-3" />
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background">
-                    <span className="text-sm text-muted-foreground">Transaction History</span>
-                    <Badge className="bg-primary/10 text-primary border-primary/20">Excellent</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background">
-                    <span className="text-sm text-muted-foreground">Climate Risk Assessment</span>
-                    <Badge className="bg-accent/10 text-accent border-accent/20">Moderate</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background">
-                    <span className="text-sm text-muted-foreground">Social Collateral</span>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{currentGuarantors.length}/4 Guarantors</span>
-                      <Dialog open={guarantorDialogOpen} onOpenChange={setGuarantorDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="xs" variant="default">Invite Guarantor</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Invite a Guarantor</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-3">
-                            <input
-                              className="w-full border rounded px-2 py-1"
-                              placeholder="Phone or Email"
-                              value={guarantorInput}
-                              onChange={e => setGuarantorInput(e.target.value)}
-                            />
-                            <Button className="w-full" disabled={!guarantorInput} onClick={handleInviteGuarantor}>
-                              Send Referral
-                            </Button>
-                            <div className="text-xs text-muted-foreground">More guarantors = higher Score & trust. Microfinance uses this when evaluating your loan risk.</div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                </div>
-                {/* Display current guarantor names below */}
-                {currentGuarantors.map((g, idx) => (
-                  <div key={idx} className="ml-8 text-xs text-muted-foreground flex items-center gap-2">
-                    <Users className="w-3 h-3" /> <span>{g}</span>
-                  </div>
-                ))}
+                {/* Simplified: no guarantors or mock badges; values come from AI */}
                 <div className="space-y-3">
                   <div className="text-sm font-semibold">Credit Application Choice</div>
                   <RadioGroup value={creditMethod} onValueChange={(v)=>setCreditMethod(v as any)} className="grid grid-cols-2 gap-3">
@@ -155,6 +254,64 @@ const FinancialTools = () => {
                   </RadioGroup>
                   <div className="text-xs text-muted-foreground">Selected: <span className="font-medium">{creditMethod === 'input' ? 'Input on credit' : 'Cash'}</span></div>
                 </div>
+
+                {creditScore !== null && (
+                  <div className="p-4 rounded-lg bg-background border">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <div className="font-semibold">AI Credit Score</div>
+                        <div className="text-muted-foreground">Recommended loan and rate based on your data</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">{creditScore}</div>
+                        {interestRate !== null && (
+                          <div className="text-xs text-muted-foreground">Rate: {interestRate}%</div>
+                        )}
+                      </div>
+                    </div>
+                    {(strengths.length > 0 || weaknesses.length > 0) && (
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {!!strengths.length && (
+                          <div className="p-3 rounded border bg-green-50/40">
+                            <div className="font-medium text-green-800">Why you qualify</div>
+                            <ul className="list-disc ml-5 text-sm text-green-900 mt-1">
+                              {strengths.slice(0, 5).map((s, i) => (<li key={i}>{s}</li>))}
+                            </ul>
+                          </div>
+                        )}
+                        {!!weaknesses.length && (
+                          <div className="p-3 rounded border bg-amber-50/40">
+                            <div className="font-medium text-amber-800">What to improve</div>
+                            <ul className="list-disc ml-5 text-sm text-amber-900 mt-1">
+                              {weaknesses.slice(0, 5).map((w, i) => (<li key={i}>{w}</li>))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {recommendedLoanAmount !== null && (
+                      <div className="mt-3 text-sm">
+                        <span className="font-medium">Recommended Loan:</span> ${recommendedLoanAmount.toLocaleString()}
+                      </div>
+                    )}
+                    {!!strengths.length && (
+                      <div className="mt-3 text-sm">
+                        <div className="font-medium">Strengths</div>
+                        <ul className="list-disc ml-5 text-muted-foreground">
+                          {strengths.slice(0, 3).map((s, i) => (<li key={i}>{s}</li>))}
+                        </ul>
+                      </div>
+                    )}
+                    {!!weaknesses.length && (
+                      <div className="mt-3 text-sm">
+                        <div className="font-medium">Areas to Improve</div>
+                        <ul className="list-disc ml-5 text-muted-foreground">
+                          {weaknesses.slice(0, 3).map((w, i) => (<li key={i}>{w}</li>))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -235,6 +392,14 @@ const FinancialTools = () => {
                   onClick={handleFindMatch}
                 >
                   Find Your Match
+                </Button>
+              </div>
+              <div className="mt-4 text-sm text-white/90">
+                Need help with your credit assessment or loan options? <a href="mailto:support@sproutsell.africa" className="underline font-semibold">Contact Support</a>.
+              </div>
+              <div className="mt-3">
+                <Button variant="outline" size="sm" onClick={refreshAnalysis} disabled={loadingAnalysis}>
+                  {loadingAnalysis ? 'Updating...' : 'Refresh Credit Analysis'}
                 </Button>
               </div>
             </CardContent>
