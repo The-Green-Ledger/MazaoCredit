@@ -1,136 +1,166 @@
-# 🚀 Sprout & Sell: The Resilient Farmer Edition
+# 🌱 Sprout-Sell — AI-Powered Credit For Every Farmer
 
-**Tagline:** From Seed to Sale, on Any Device. Zero Carbon, Full Cover.
+Bold, inclusive, and data-driven. Sprout-Sell brings AI credit assessments to smallholder farmers using simple inputs (name, location, land size), and enriches the analysis with climate, weather, and yield signals — no financial history required.
 
-**Sprout & Sell** is a unified, dual-channel **AgriTech solution** designed to maximize the resilience and profitability of small-scale farmers. It connects farmers directly to the market while integrating critical financial, risk, and sustainability tools. Our core commitment is **2G Inclusivity**, ensuring every feature, from listing produce to securing a micro-loan, is accessible regardless of device or connectivity.
+• Frontend (Netlify): https://mazao-credit.netlify.app  
+• Backend (Render): https://mazao-credit-backend.onrender.com
 
-## ✨ Features
+---
 
-Sprout & Sell is an **Integrated Farm Resilience Hub** built on a dual-channel architecture (Web App & 2G/SMS/USSD).
+## 🧠 How the AI Works
+Our AI computes a creditworthiness assessment by blending farmer-provided inputs with external and modelled datasets:
 
-### 1\. 🛒 Unified Marketplace & Inventory
+- Land and production context: land size, crop type, years of experience
+- Location awareness: county/region, country, regional yield baselines
+- Climate and weather: risk of drought, flood, and hail by crop and county
+- Optional mobile money aggregates: inflows, outflows, transaction counts
 
-  * **Multi-Channel Listing:** Farmers can list produce via a **Web App (Voice/Photo Input)** or via **SMS/USSD** for feature phones.
-  * **Intelligent Categorization:** A **Claude.ai layer** instantly processes voice/photo/text input to accurately categorize and list the produce.
-  * **Real-time Matching:** Algorithms match farmers' listings with registered buyers' needs based on produce, quantity, and location.
-  * **Secure Transactions:** Integrated **M-Pesa** payments ensure payment assurance and build a strong transaction history.
+The pipeline can run entirely without sensitive bank statements. Financial data, if provided, simply refines the baseline. The AI returns:
 
-### 2\. 🛡️ Advanced Farmer Empowerment & Resilience
+- Credit score (0–100)
+- Recommended loan amount
+- Interest rate
+- Strengths, weaknesses, and risk level
+- Financial readiness and analysis timestamp
 
-This section focuses on the platform's unique AI-driven tools that go beyond simple market access.
+---
 
-#### A. Financial Resilience & Microfinance
+## 📦 Project Structure
 
-  * **AI-Powered Financial Readiness Score:** A dynamic score for loan-matching, generated from a comprehensive data set including:
-      * **Platform Data:** Transaction history, reliability ratings, and sales performance.
-      * **External Data:** Satellite imagery, soil health, historical rainfall, and farmer-provided M-Pesa history.
-  * **Social Collateral Network:** A system requiring guaranters who are onboarded via a referral link, gamifying network building and enhancing trust for microfinance access.
-  * **Micro-Loan Matching:** Matches farmers with vetted **Microfinance Institutions (MFIs)** based on their Financial Readiness Score, accessible via app or simple SMS keywords.
+```
+Sprout-Sell/
+  Sprout-Sell/
+    ai/
+      data/                    # CSV inputs (e.g., weather_forecast.csv)
+      scripts/                 # Python AI entrypoint
+        credit_predictor.py
+      models/                  # Optional model artifacts (.pkl)
+      venv/                    # Python virtual environment
+    backend/
+      src/
+        app.js                 # Express server
+        routes/
+          auth.js              # Registration + credit analysis API
+          financial.js
+          products.js
+          users.js
+        services/
+          AICreditScoring.js   # JS/OpenAI fallback + parsing
+          PythonCreditScoring.js# Spawns ai/scripts/credit_predictor.py
+        config/
+          supabase.js          # Supabase client (service key on server)
+    frontend/
+      src/
+        components/
+          FinancialTools.tsx   # Minimal input → AI analysis + raw JSON view
+        pages/
+          Auth.tsx             # Signup (with gender) + role-aware
+          FinancialPage.tsx
+          Dashboard.tsx
+      index.html
+      vite.config.ts
+    netlify.toml                # SPA build + redirects
+    render.yaml                 # Backend deploy config
+    README.md
+```
 
-#### B. Parametric Crop Insurance & Risk
+---
 
-  * **AI-Driven Risk Alerts:** Proactive **SMS alerts** on imminent risks (e.g., hailstorms, armyworm) using external weather and pest data.
-  * **Parametric Hailstorm Cover:** Integrates with Weather/Satellite Data APIs. A confirmed severe hail event in the farmer's location automatically triggers an immediate **M-Pesa payout**—no assessor needed.
-  * **Pest Epidemic Recovery:** Automatically pushes targeted micro-credit offers for necessary control measures during outbreaks.
+## 🔗 Key Endpoints
 
-#### C. Sustainability & Logistics
+- POST `/api/auth/register` — Create/update user profile (includes role, gender, data)  
+- POST `/api/auth/credit-analysis/:userId` — Run AI; persists score and logs to server  
+- GET `/api/auth/credit-analysis/:userId` — Fetch latest persisted analysis  
 
-  * **👣 Carbon Footprint Tracking (AI-Driven):** The Claude.ai layer analyzes farmer-listed inputs (fertilizer, transport, energy) to calculate a simple, visual **"Carbon Score" (Kg $\text{CO}_2e$ per $100\text{Kg}$ of produce)**.
-  * **Actionable Insights:** Helps farmers identify high-emission "hot spots" to optimize practices and appeal to premium, eco-conscious buyers.
-  * **Logistics Support:** Suggests optimal **pick-up points** and connects farmers with vetted local transport providers.
+The backend first tries Python AI (ai/scripts/credit_predictor.py); if unavailable, it falls back to a JS/OpenAI model, then persists the result to Supabase (when configured).
 
------
+---
 
-## 🏗️ Technical Architecture & Stack
+## 🚀 Run Locally
 
-| Component | Technology / Language | Purpose |
-| :--- | :--- | :--- |
-| **Frontend (Web App)** | React/Next.js | Interactive map, listing, dashboard, and carbon score visualization. |
-| **Backend API** | Python (Django/Flask) | Core business logic, data management, and integration hub. |
-| **AI/ML Layer** | Claude.ai, Python (Pandas/Scikit) | Produce categorization, Carbon Score calculation, and Financial Readiness Scoring. |
-| **2G/SMS/USSD Gateway** | Twilio, Africa's Talking | Inclusivity layer for feature phone communication and data capture. |
-| **Database** | PostgreSQL/MongoDB | Transaction, inventory, profile, and rating data storage. |
-| **External APIs** | M-Pesa API, Satellite/Weather Data APIs | Payments, parametric insurance triggers, and climate data integration. |
+### 1) AI Service (Python)
+```bash
+cd Sprout-Sell/ai
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt  # if present; otherwise install numpy, pandas, etc.
 
------
+# Optional: seed weather data
+echo "county,crop,drought_risk,flood_risk,hail_risk\nnakuru,maize,0.2,0.1,0.05\nnairobi,beans,0.1,0.1,0.02\nmachakos,tomatoes,0.3,0.05,0.03" > data/weather_forecast.csv
 
-## 🤝 Getting Started (Local Setup)
+# Smoke test
+echo '{
+  "farmData":{"farmSize":3,"farmType":"maize"},
+  "locationData":{"county":"Nakuru"},
+  "financialData":{"annualRevenue":120000},
+  "mpesaData":{"total_inflows":80000,"total_outflows":40000,"inflow_count":120}
+}' | python scripts/credit_predictor.py
+```
 
-To set up the development environment, follow these steps:
+### 2) Backend (Node/Express)
+```bash
+cd Sprout-Sell/backend
+npm install
 
-### Prerequisites
+# Optional persistence (recommended)
+export SUPABASE_URL=your_supabase_url
+export SUPABASE_SERVICE_KEY=your_service_role_key
 
-  * Python 3.8+
-  * Node.js (LTS)
-  * Docker (Recommended for setting up PostgreSQL and other services)
-  * API Keys: Claude.ai, Twilio/Africa's Talking, M-Pesa Sandbox
+# Start API
+node src/app.js
+# → http://localhost:5000
+```
 
-### Installation
+### 3) Frontend (Vite + React)
+```bash
+cd Sprout-Sell/frontend
+npm install
 
-1.  **Clone the Repository:**
+# Create .env.local
+cat > .env.local <<EOF
+VITE_API_URL=http://localhost:5000
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+EOF
 
-    ```bash
-    git clone https://github.com/your-org/sprout-and-sell.git
-    cd sprout-and-sell
-    ```
+npm run dev
+# → http://localhost:5173
+```
 
-2.  **Setup Backend (Python):**
+---
 
-    ```bash
-    # Create and activate virtual environment
-    python -m venv venv
-    source venv/bin/activate
-    # Install dependencies
-    pip install -r backend/requirements.txt
-    # Configure .env file with API keys and database connection
-    # Run database migrations
-    python manage.py migrate
-    # Start the backend server
-    python manage.py runserver
-    ```
+## 🧪 Quick API Test
+```bash
+# Replace with a real Supabase user id once signed up via frontend
+USER_ID="test-user-123"
 
-3.  **Setup Frontend (React/Next.js):**
+curl -s -X POST "http://localhost:5000/api/auth/credit-analysis/$USER_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "farmData": {"farmSize": 2.5, "farmType": "beans", "yearsExperience": 2},
+        "locationData": {"region": "Nairobi", "country": "Kenya"},
+        "financialData": {"annualRevenue": 20000},
+        "mpesaData": {"total_inflows": 15000, "total_outflows": 12000, "inflow_count": 40}
+      }'
+```
+The server logs a line like: `[AI CREDIT] user=... score=... rate=... loan=...` and persists to Supabase if configured.
 
-    ```bash
-    cd frontend
-    # Install dependencies
-    npm install
-    # Configure .env file with backend API endpoint
-    # Start the frontend server
-    npm run dev
-    ```
+---
 
-The web app should be running at `http://localhost:3000`.
+## 🌍 Deployments
 
------
+Frontend (Netlify): https://mazao-credit.netlify.app  
+Backend (Render): https://mazao-credit-backend.onrender.com
 
-## 🚀 Deployments
+Netlify build (configured in `netlify.toml`):
+- Base: `frontend`
+- Build: `npm run build`
+- Publish: `dist`
+- Env: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
-### Backend (Render)
-- Deployed at: https://mazao-credit-backend.onrender.com
+---
 
-### Frontend (Netlify)
-1. Netlify site from Git → select this repo.
-2. Build settings:
-   - Base directory: `frontend`
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-3. Environment variables (Site settings → Build & deploy → Environment):
-   - `VITE_API_URL` = `https://mazao-credit-backend.onrender.com`
-   - `VITE_SUPABASE_URL` = `<your-supabase-url>`
-   - `VITE_SUPABASE_ANON_KEY` = `<your-supabase-anon-key>`
-4. SPA redirects are configured via `netlify.toml`.
+## ✨ Why This Matters
 
-Note: Vite only exposes environment variables prefixed with `VITE_`.
+Millions of farmers lack formal financial records. Sprout-Sell flips the script by leveraging agronomic signals — yield baselines, climate risk, location, land size, and experience — to open fair credit access. Finance should follow good farming, not just bank statements.
 
------
-
-## 🎯 Hackathon Alignment & Impact
-
-This platform directly addresses the core themes of **Agri-Finance, Parametric Insurance, and AI-Powered Credit Scoring**. Our innovation lies in:
-
-1.  **Human-Centered Design:** Seamlessly integrating sophisticated AI capabilities with the accessibility of **2G technology** for underserved farmers.
-2.  **Risk Mitigation:** Replacing complex, slow claim processes with **instant, automated parametric payouts** for catastrophic events.
-3.  **Sustainable Incentive:** Introducing the **Carbon Score** to drive eco-conscious farming and provide a marketable premium for farmers.
-
-We are building a scalable, inclusive solution that secures the farmer's long-term livelihood.

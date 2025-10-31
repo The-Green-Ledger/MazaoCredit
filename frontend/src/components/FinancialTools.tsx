@@ -1,3 +1,4 @@
+// Minimal financial tools UI: collects key inputs and displays AI analysis
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ const FinancialTools = () => {
   const [recommendedLoanAmount, setRecommendedLoanAmount] = useState<number | null>(null);
   const [rawAnalysis, setRawAnalysis] = useState<any | null>(null);
 
+  // Load latest persisted analysis (if any) for the signed-in user
   useEffect(() => {
     // Try load last known analysis to display if exists
     (async () => {
@@ -42,6 +44,7 @@ const FinancialTools = () => {
     })();
   }, []);
 
+  // Build payload and request a fresh AI analysis; then show results
   const submitToAI = async () => {
     try {
       setSubmitting(true);

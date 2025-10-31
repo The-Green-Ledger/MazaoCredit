@@ -1,3 +1,4 @@
+// Authentication and AI-credit related routes
 const express = require('express');
 const { supabase } = require('../config/supabase');
 const AICreditScoring = require('../services/AICreditScoring');
@@ -6,7 +7,8 @@ const { runPythonCreditPredictor } = require('../services/PythonCreditScoring');
 
 const router = express.Router();
 
-// Create a simple user profile record (paired with Supabase Auth user on frontend)
+// Create or upsert a lightweight profile record for any role.
+// Expects a Supabase Auth userId from the client; attaches profile JSON for persistence.
 router.post('/register', async (req, res) => {
   try {
     const payload = req.body || {};
@@ -25,6 +27,7 @@ router.post('/register', async (req, res) => {
     };
 
     // Run credit analysis from registration data (Python preferred)
+    // This allows instant scoring post-registration for farmers (and optionally any role)
     let creditAnalysis;
     try {
       const pyResult = await runPythonCreditPredictor({
@@ -51,13 +54,13 @@ router.post('/register', async (req, res) => {
       lastCreditUpdate: new Date().toISOString(),
     };
 
-    // Store in-memory for demo/mock
+    // Store in-memory for demo/mock so that the service works without DB
     AIModelIntegration.saveProfile(userId, augmentedProfile);
     if (creditAnalysis) {
       AIModelIntegration.setCreditAnalysis(userId, creditAnalysis);
     }
 
-    // Try to persist to Supabase if configured
+    // Try to persist to Supabase if configured (service role key required)
     try {
       if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
         await supabase.from('users').upsert({ id: userId, profile: augmentedProfile }, { onConflict: 'id' });
@@ -76,7 +79,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Update farmer profile (mock-friendly)
+// Update farmer profile (mock-friendly) — merges arbitrary profile fields.
+// Accepts top-level gender and nested farm/financial/location data.
 router.put('/profile/farmer', async (req, res) => {
   try {
     const { userId, ...profile } = req.body;
@@ -107,7 +111,8 @@ router.put('/profile/farmer', async (req, res) => {
   }
 });
 
-// Create or refresh credit analysis for a user
+// Create or refresh credit analysis for a user.
+// If body is empty, derives inputs from persisted profile before scoring.
 router.post('/credit-analysis/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -159,7 +164,7 @@ router.post('/credit-analysis/:userId', async (req, res) => {
       console.log(`[AI CREDIT] user=${userId} score=${creditAnalysis?.creditScore} rate=${creditAnalysis?.interestRate} loan=${creditAnalysis?.recommendedLoanAmount}`);
     } catch {}
 
-    // Persist to supabase if available
+    // Persist to supabase if available and hydrate in-memory cache
     try {
       if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
         await supabase
@@ -194,7 +199,8 @@ router.post('/credit-analysis/:userId', async (req, res) => {
   }
 });
 
-// Get latest credit analysis for a user
+// Get latest credit analysis for a user.
+// Order of resolution: in-memory cache → Supabase profile → compute from profile
 router.get('/credit-analysis/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

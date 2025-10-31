@@ -1,3 +1,4 @@
+// Sign in / Sign up page with role selection and optional farmer data
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

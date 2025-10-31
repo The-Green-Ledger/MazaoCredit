@@ -1,3 +1,4 @@
+// Spawns the Python AI process and returns structured JSON
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -53,6 +54,7 @@ function runPythonCreditPredictor(farmerData) {
         }
       });
 
+      // Stream JSON payload to Python stdin
       const payload = JSON.stringify(farmerData);
       child.stdin.write(payload);
       child.stdin.end();

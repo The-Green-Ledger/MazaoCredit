@@ -1,3 +1,4 @@
+// JS-based AI scoring service with OpenAI fallback and robust mock mode
 const { OpenAI } = require('openai');
 const { supabase } = require('../config/supabase');
 
@@ -17,6 +18,7 @@ class AICreditScoring {
 
       const prompt = this.buildCreditAnalysisPrompt(farmerData);
 
+      // Chat completion with a domain-specific prompt (kept conservative)
       const response = await this.openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
@@ -40,6 +42,7 @@ class AICreditScoring {
     }
   }
 
+  // Build a stable prompt summarizing the farmer context
   buildCreditAnalysisPrompt(farmerData) {
     const {
       farmData = {},
@@ -89,6 +92,7 @@ Please provide:
     `;
   }
 
+  // Parse free-form model output into a structured credit analysis
   parseCreditAnalysis(aiResponse, farmerData) {
     // Parse AI response and extract structured data
     const lines = aiResponse.split('\n');
@@ -197,6 +201,7 @@ Please provide:
     return items.length > 0 ? items : [`No ${keyword.toLowerCase()} identified`];
   }
 
+  // Deterministic mock scoring using simple heuristics for local/dev
   getMockCreditAnalysis(farmerData) {
     const farmSize = parseFloat(farmerData.farmData?.farmSize) || 1;
     const revenue = parseFloat(farmerData.financialData?.annualRevenue) || 0;
@@ -235,6 +240,7 @@ Please provide:
   }
 
   // Update credit score based on new transaction data
+  // Example: re-score a user after a new transaction
   async updateCreditScore(userId, transactionData) {
     try {
       // Get current user data

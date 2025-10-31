@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Credit predictor entrypoint
+# Reads JSON from stdin, enriches with regional yield + weather, and returns a structured credit analysis
 import sys
 import json
 import os
@@ -6,6 +8,7 @@ from typing import Any, Dict
 
 
 def load_csv(path: str):
+    """Load a CSV with pandas if available; return None on failure."""
     try:
         import pandas as pd
         return pd.read_csv(path)
@@ -14,6 +17,7 @@ def load_csv(path: str):
 
 
 def load_pickle(path: str):
+    """Load a pickle artifact if present; return None on failure."""
     try:
         import pickle
         with open(path, 'rb') as f:
@@ -23,6 +27,7 @@ def load_pickle(path: str):
 
 
 def safe_float(value, default: float = 0.0) -> float:
+    """Parse value as float with a default fallback."""
     try:
         return float(value)
     except Exception:
@@ -30,6 +35,7 @@ def safe_float(value, default: float = 0.0) -> float:
 
 
 def compute_regional_yield_features(df, county: str, crop: str) -> Dict[str, Any]:
+    """Derive expected yield per acre and sample count for a county/crop slice."""
     if df is None or df.empty:
         return {
             'regional_avg_yield_per_acre': 0.0,
@@ -83,6 +89,7 @@ def compute_regional_yield_features(df, county: str, crop: str) -> Dict[str, Any
 
 
 def score_from_signals(expected_yield: float, farm_size: float, mpesa: Dict[str, Any], annual_revenue: float, weather_risk: float) -> Dict[str, Any]:
+    """Heuristic scoring that blends production, liquidity, and risk into a 0-100 score."""
     # Base score from production potential
     production_potential = expected_yield * max(farm_size, 0.1)
     # Normalize potential into 0-100 using a soft cap
@@ -176,6 +183,7 @@ def compute_weather_risk(weather_df, county: str, crop: str) -> float:
 
 
 def main():
+    """CLI main: read JSON, compute features, score, and print JSON result."""
     try:
         payload = json.loads(sys.stdin.read())
     except Exception as e:

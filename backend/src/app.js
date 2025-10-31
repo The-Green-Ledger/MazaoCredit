@@ -1,3 +1,4 @@
+// Core HTTP server and middleware stack
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
@@ -7,10 +8,10 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-// FIXED: Correct import path
+// Supabase connection (used to verify DB availability at boot)
 const { testConnection } = require('./config/supabase');
 
-// Route imports - update these paths too if needed
+// Route mounts (organized per domain)
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
@@ -20,10 +21,10 @@ const financialRoutes = require('./routes/financial');
 const app = express();
 const server = http.createServer(app);
 
-// Test Supabase connection
+// Attempt a best-effort DB connectivity check (non-fatal)
 testConnection();
 
-// Rate limiting
+// Basic API rate limiting to protect the service
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
@@ -33,7 +34,7 @@ const limiter = rateLimit({
   }
 });
 
-// CORS configuration
+// CORS configuration — allow specific origins and support credentials
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8080',
@@ -69,7 +70,7 @@ app.use(cors({
 
 app.options('*', cors());
 
-// Middleware
+// Security, performance, logging, parsing middleware
 app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
@@ -77,20 +78,20 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
+// Simple request logger (timestamp + method + path)
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Routes
+// Mount routes under /api/* namespaces
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/financial', financialRoutes);
 
-// Health check
+// Lightweight health probe for uptime checks
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -99,7 +100,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Centralized error handler — includes CORS error specialization
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
   
@@ -118,7 +119,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// Catch-all 404 for unknown API routes
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -126,6 +127,7 @@ app.use('*', (req, res) => {
   });
 });
 
+// Boot the HTTP server
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
