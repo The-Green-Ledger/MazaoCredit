@@ -223,10 +223,10 @@ const FarmRegistration = () => {
       return;
     }
 
-    if (!drawnItems || drawnItems.getLayers().length === 0) {
+    if ((!drawnItems || drawnItems.getLayers().length === 0) && !formData.farmSize) {
       toast({
-        title: "No Boundary Drawn",
-        description: "Please draw your farm boundary on the map",
+        title: "Farm Size Required",
+        description: "Enter your farm size in hectares or draw a boundary on the map",
         variant: "destructive",
       });
       return;
@@ -394,8 +394,7 @@ const FarmRegistration = () => {
                     type="number"
                     value={formData.farmSize}
                     onChange={(e) => handleInputChange("farmSize", e.target.value)}
-                    placeholder="Auto-calculated from map"
-                    readOnly
+                    placeholder="Enter size in hectares (you can also draw on map)"
                   />
                 </div>
 
@@ -552,7 +551,7 @@ const FarmRegistration = () => {
             <CardHeader>
               <CardTitle>Draw Farm Boundary</CardTitle>
               <CardDescription>
-                Use the drawing tools to mark your farm boundaries on the map
+                You can draw your farm boundary (optional) or enter farm size manually above
               </CardDescription>
             </CardHeader>
             <CardContent>
