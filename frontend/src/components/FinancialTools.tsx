@@ -11,10 +11,17 @@ const FinancialTools = () => {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [landSize, setLandSize] = useState("");
+  const [cropType, setCropType] = useState("");
+  const [yearsExperience, setYearsExperience] = useState("");
+  const [annualRevenue, setAnnualRevenue] = useState("");
+  const [mpesaIn, setMpesaIn] = useState("");
+  const [mpesaOut, setMpesaOut] = useState("");
+  const [mpesaCount, setMpesaCount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [interestRate, setInterestRate] = useState<number | null>(null);
   const [recommendedLoanAmount, setRecommendedLoanAmount] = useState<number | null>(null);
+  const [rawAnalysis, setRawAnalysis] = useState<any | null>(null);
 
   useEffect(() => {
     // Try load last known analysis to display if exists
@@ -46,9 +53,20 @@ const FinancialTools = () => {
       }
 
       const farmerData = {
-        farmData: { farmSize: parseFloat(landSize || '0'), farmType: 'unknown', yearsExperience: 0 },
-        financialData: {},
-        locationData: { region: location || 'Unknown', country: 'Kenya' },
+        farmData: {
+          farmSize: parseFloat(landSize || '0'),
+          farmType: cropType || 'unknown',
+          yearsExperience: parseInt(yearsExperience || '0') || 0
+        },
+        financialData: {
+          annualRevenue: parseFloat(annualRevenue || '0') || 0
+        },
+        mpesaData: {
+          total_inflows: parseFloat(mpesaIn || '0') || 0,
+          total_outflows: parseFloat(mpesaOut || '0') || 0,
+          inflow_count: parseInt(mpesaCount || '0') || 0
+        },
+        locationData: { region: location || 'Unknown', county: location || 'Unknown', country: 'Kenya' },
         historicalData: {},
         productionData: {},
         profile: { name }
@@ -63,6 +81,7 @@ const FinancialTools = () => {
       if (!json.success) throw new Error(json.message || 'AI analysis failed');
 
       const ca = json.data.creditAnalysis;
+      setRawAnalysis(ca);
       setScore(ca.creditScore ?? null);
       setInterestRate(ca.interestRate ?? null);
       setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
@@ -98,6 +117,30 @@ const FinancialTools = () => {
                   <UILabel htmlFor="land-size">Land Size (hectares)</UILabel>
                   <Input id="land-size" type="number" value={landSize} onChange={(e)=>setLandSize(e.target.value)} placeholder="e.g., 2.5" />
                 </div>
+                <div>
+                  <UILabel htmlFor="crop-type">Primary Crop</UILabel>
+                  <Input id="crop-type" value={cropType} onChange={(e)=>setCropType(e.target.value)} placeholder="e.g., maize" />
+                </div>
+                <div>
+                  <UILabel htmlFor="years-experience">Years Farming</UILabel>
+                  <Input id="years-experience" type="number" value={yearsExperience} onChange={(e)=>setYearsExperience(e.target.value)} placeholder="e.g., 3" />
+                </div>
+                <div>
+                  <UILabel htmlFor="annual-revenue">Annual Revenue (KES)</UILabel>
+                  <Input id="annual-revenue" type="number" value={annualRevenue} onChange={(e)=>setAnnualRevenue(e.target.value)} placeholder="e.g., 120000" />
+                </div>
+                <div>
+                  <UILabel htmlFor="mpesa-in">M-PESA Total Inflows (KES)</UILabel>
+                  <Input id="mpesa-in" type="number" value={mpesaIn} onChange={(e)=>setMpesaIn(e.target.value)} placeholder="e.g., 80000" />
+                </div>
+                <div>
+                  <UILabel htmlFor="mpesa-out">M-PESA Total Outflows (KES)</UILabel>
+                  <Input id="mpesa-out" type="number" value={mpesaOut} onChange={(e)=>setMpesaOut(e.target.value)} placeholder="e.g., 40000" />
+                </div>
+                <div>
+                  <UILabel htmlFor="mpesa-count">M-PESA Inflow Count</UILabel>
+                  <Input id="mpesa-count" type="number" value={mpesaCount} onChange={(e)=>setMpesaCount(e.target.value)} placeholder="e.g., 120" />
+                </div>
               </div>
 
               <Button onClick={submitToAI} disabled={submitting || !landSize} className="w-full">
@@ -117,6 +160,13 @@ const FinancialTools = () => {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-2">The score has been logged on the server during processing for audit.</div>
+                </div>
+              )}
+
+              {rawAnalysis && (
+                <div className="p-4 rounded-lg bg-muted/20 border">
+                  <div className="text-sm font-medium mb-2">Raw AI Response</div>
+                  <pre className="text-xs overflow-auto whitespace-pre-wrap">{JSON.stringify(rawAnalysis, null, 2)}</pre>
                 </div>
               )}
             </CardContent>
