@@ -100,7 +100,28 @@ To set up the development environment, follow these steps:
     npm run dev
     ```
 
-The web app should be running at `http://localhost:3000` and the API at `http://localhost:8000`.
+The web app should be running at `http://localhost:3000`.
+
+-----
+
+## 🚀 Deployments
+
+### Backend (Render)
+- Deployed at: https://mazao-credit-backend.onrender.com
+
+### Frontend (Netlify)
+1. Netlify site from Git → select this repo.
+2. Build settings:
+   - Base directory: `frontend`
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+3. Environment variables (Site settings → Build & deploy → Environment):
+   - `VITE_API_URL` = `https://mazao-credit-backend.onrender.com`
+   - `VITE_SUPABASE_URL` = `<your-supabase-url>`
+   - `VITE_SUPABASE_ANON_KEY` = `<your-supabase-anon-key>`
+4. SPA redirects are configured via `netlify.toml`.
+
+Note: Vite only exposes environment variables prefixed with `VITE_`.
 
 -----
 
