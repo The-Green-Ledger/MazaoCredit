@@ -6,17 +6,40 @@ const { runPythonCreditPredictor } = require('../services/PythonCreditScoring');
 
 const router = express.Router();
 
-// Basic auth route for testing
+// Create a simple user profile record (paired with Supabase Auth user on frontend)
 router.post('/register', async (req, res) => {
   try {
-    res.json({
-      success: true,
-      message: 'Auth endpoint working'
-    });
+    const payload = req.body || {};
+    const userId = payload.userId || payload.id || payload.supabaseUserId || payload.authUserId;
+    if (!userId) return res.status(400).json({ success: false, message: 'Missing userId in request body' });
+
+    const profile = {
+      name: payload.name,
+      email: payload.email,
+      role: payload.role,
+      farmData: payload.farmData || {},
+      financialData: payload.financialData || {},
+      locationData: payload.locationData || {},
+      createdAt: new Date().toISOString()
+    };
+
+    // Store in-memory for demo/mock
+    AIModelIntegration.saveProfile(userId, profile);
+
+    // Try to persist to Supabase if configured
+    try {
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        await supabase.from('users').upsert({ id: userId, profile }, { onConflict: 'id' });
+      }
+    } catch (e) {
+      // ignore if persistence is unavailable
+    }
+
+    res.json({ success: true, data: { userId, profile } });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Auth failed',
+      message: 'Register failed',
       error: error.message
     });
   }
