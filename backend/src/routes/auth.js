@@ -153,6 +153,11 @@ router.post('/credit-analysis/:userId', async (req, res) => {
       creditAnalysis = await AICreditScoring.analyzeFarmerCredit(farmerData);
     }
 
+    // Log score to server terminal for visibility during processing
+    try {
+      console.log(`[AI CREDIT] user=${userId} score=${creditAnalysis?.creditScore} rate=${creditAnalysis?.interestRate} loan=${creditAnalysis?.recommendedLoanAmount}`);
+    } catch {}
+
     // Persist to supabase if available
     try {
       if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
