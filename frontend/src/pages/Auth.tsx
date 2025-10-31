@@ -88,7 +88,7 @@ const Auth = () => {
         };
 
         // Send to our backend API
-        const response = await fetch('http://localhost:5000/api/auth/register', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ const Auth = () => {
       }
 
       // Get user data from our backend
-      const userResponse = await fetch(`http://localhost:5000/api/users/${signInData.user.id}`);
+      const userResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${signInData.user.id}`);
       const userResult = await userResponse.json();
 
       toast({ 

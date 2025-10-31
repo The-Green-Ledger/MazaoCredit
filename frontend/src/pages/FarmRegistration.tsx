@@ -153,7 +153,7 @@ const FarmRegistration = () => {
         }
       };
 
-      const response = await fetch(`http://localhost:5000/api/auth/credit-analysis/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/credit-analysis/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ const FarmRegistration = () => {
           }
         };
 
-        const response = await fetch(`http://localhost:5000/api/auth/profile/farmer`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile/farmer`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

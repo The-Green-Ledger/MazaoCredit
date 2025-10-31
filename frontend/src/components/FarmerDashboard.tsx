@@ -19,7 +19,7 @@ const FarmerDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const resp = await fetch('http://localhost:5000/api/products');
+        const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
         const json = await resp.json();
         if (json.success && Array.isArray(json.data)) setListings(json.data);
       } catch (e) {
