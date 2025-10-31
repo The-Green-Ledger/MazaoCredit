@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label as UILabel } from "@/components/ui/label";
 
 const FinancialTools = () => {
-  const [readinessScore, setReadinessScore] = useState<number>(78);
+  const [readinessScore, setReadinessScore] = useState<number | null>(null);
   const [creditScore, setCreditScore] = useState<number | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [weaknesses, setWeaknesses] = useState<string[]>([]);
@@ -56,16 +56,11 @@ const FinancialTools = () => {
   
 
   useEffect(() => {
-    // Load latest credit analysis (from backend or localStorage)
+    // Load latest credit analysis strictly from backend (no local fallbacks)
     const primeUserId = async (): Promise<string | undefined> => {
       const { data: { session } } = await supabase.auth.getSession();
       const uid = session?.user?.id;
-      if (uid) {
-        try { if (!localStorage.getItem('userId')) localStorage.setItem('userId', uid); } catch {}
-        return uid;
-      }
-      const local = localStorage.getItem('userId') || undefined;
-      return local;
+      return uid;
     };
 
     const loadFromBackend = async (): Promise<boolean> => {
@@ -77,7 +72,7 @@ const FinancialTools = () => {
         if (json.success && json.data?.creditAnalysis) {
           const ca = json.data.creditAnalysis;
           setCreditScore(ca.creditScore ?? null);
-          setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+          setReadinessScore(typeof ca.financialReadiness === 'number' ? ca.financialReadiness : (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : null));
           setStrengths(ca.strengths || []);
           setWeaknesses(ca.weaknesses || []);
           setInterestRate(ca.interestRate ?? null);
@@ -88,25 +83,11 @@ const FinancialTools = () => {
       return false;
     };
 
-    const loadFromLocal = () => {
-      try {
-        const raw = localStorage.getItem('creditAnalysis');
-        if (!raw) return;
-        const ca = JSON.parse(raw);
-        setCreditScore(ca.creditScore ?? null);
-        setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
-        setStrengths(ca.strengths || []);
-        setWeaknesses(ca.weaknesses || []);
-        setInterestRate(ca.interestRate ?? null);
-        setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
-      } catch {}
-    };
-
     const requestFreshAnalysisAggregatingRecords = async () => {
       try {
         setLoadingAnalysis(true);
         const { data: { session } } = await supabase.auth.getSession();
-        const uid = session?.user?.id || localStorage.getItem('userId');
+        const uid = session?.user?.id;
         if (!uid) return;
         const { data } = await supabase
           .from('farm_records')
@@ -118,8 +99,8 @@ const FinancialTools = () => {
           if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
         }
         const body = {
-          farmData: { farmSize: 1, farmType: 'maize', yearsExperience: 1 },
-          financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0, financialReadiness: 5 },
+          farmData: { farmSize: inflows > 0 ? 1 : 0, farmType: 'unknown', yearsExperience: 0 },
+          financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0 },
           locationData: { region: 'Unknown', country: 'Kenya' },
           mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
         };
@@ -132,12 +113,11 @@ const FinancialTools = () => {
         if (json.success && json.data?.creditAnalysis) {
           const ca = json.data.creditAnalysis;
           setCreditScore(ca.creditScore ?? null);
-          setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+          setReadinessScore(typeof ca.financialReadiness === 'number' ? ca.financialReadiness : (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : null));
           setStrengths(ca.strengths || []);
           setWeaknesses(ca.weaknesses || []);
           setInterestRate(ca.interestRate ?? null);
           setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
-          try { localStorage.setItem('creditAnalysis', JSON.stringify(ca)); } catch {}
         }
       } finally {
         setLoadingAnalysis(false);
@@ -146,10 +126,7 @@ const FinancialTools = () => {
 
     (async () => {
       const ok = await loadFromBackend();
-      if (!ok) {
-        loadFromLocal();
-        await requestFreshAnalysisAggregatingRecords();
-      }
+      if (!ok) await requestFreshAnalysisAggregatingRecords();
     })();
   }, []);
 
@@ -157,7 +134,7 @@ const FinancialTools = () => {
     try {
       setLoadingAnalysis(true);
       const { data: { session } } = await supabase.auth.getSession();
-      const uid = session?.user?.id || localStorage.getItem('userId');
+      const uid = session?.user?.id;
       if (!uid) return;
       const { data } = await supabase
         .from('farm_records')
@@ -169,8 +146,8 @@ const FinancialTools = () => {
         if (r.type === 'expense') { outflows += Number(r.amount) || 0; }
       }
       const body = {
-        farmData: { farmSize: 1, farmType: 'maize', yearsExperience: 1 },
-        financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0, financialReadiness: 5 },
+        farmData: { farmSize: inflows > 0 ? 1 : 0, farmType: 'unknown', yearsExperience: 0 },
+        financialData: { annualRevenue: inflows, assetsValue: 0, existingDebt: 0 },
         locationData: { region: 'Unknown', country: 'Kenya' },
         mpesaData: { total_inflows: inflows, total_outflows: outflows, inflow_count: inflowCount }
       };
@@ -183,12 +160,11 @@ const FinancialTools = () => {
       if (json.success && json.data?.creditAnalysis) {
         const ca = json.data.creditAnalysis;
         setCreditScore(ca.creditScore ?? null);
-        setReadinessScore(ca.financialReadiness ?? (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : 0));
+        setReadinessScore(typeof ca.financialReadiness === 'number' ? ca.financialReadiness : (typeof ca.creditScore === 'number' ? Math.round(ca.creditScore) : null));
         setStrengths(ca.strengths || []);
         setWeaknesses(ca.weaknesses || []);
         setInterestRate(ca.interestRate ?? null);
         setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
-        try { localStorage.setItem('creditAnalysis', JSON.stringify(ca)); } catch {}
         toast({ title: 'Credit analysis updated' });
       }
     } catch (e: any) {
