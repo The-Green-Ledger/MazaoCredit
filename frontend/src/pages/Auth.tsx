@@ -254,11 +254,11 @@ const Auth = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="annualRevenue">Annual Revenue (USD)</Label>
+        <Label htmlFor="annualRevenue">Annual Revenue (KES)</Label>
         <Input
           id="annualRevenue"
           type="number"
-          placeholder="e.g., 50000"
+          placeholder="e.g., 120000"
           value={farmerData.annualRevenue || ""}
           onChange={(e) => handleFarmerDataChange("annualRevenue", e.target.value)}
           disabled={isLoading}

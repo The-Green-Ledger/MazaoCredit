@@ -24,6 +24,15 @@ const FinancialTools = () => {
   const [recommendedLoanAmount, setRecommendedLoanAmount] = useState<number | null>(null);
   const [rawAnalysis, setRawAnalysis] = useState<any | null>(null);
 
+  // Format amounts in Kenyan Shillings with compact units for readability
+  const formatKes = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || isNaN(Number(value))) return 'KES 0';
+    const n = Number(value);
+    if (n >= 1_000_000) return `KES ${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1000) return `KES ${(n / 1000).toFixed(1)}K`;
+    return `KES ${Math.round(n).toLocaleString()}`;
+  };
+
   // Load latest persisted analysis (if any) for the signed-in user
   useEffect(() => {
     // Try load last known analysis to display if exists
@@ -83,11 +92,11 @@ const FinancialTools = () => {
       const json = await resp.json();
       if (!json.success) throw new Error(json.message || 'AI analysis failed');
 
-      const ca = json.data.creditAnalysis;
+        const ca = json.data.creditAnalysis;
       setRawAnalysis(ca);
       setScore(ca.creditScore ?? null);
-      setInterestRate(ca.interestRate ?? null);
-      setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
+        setInterestRate(ca.interestRate ?? null);
+        setRecommendedLoanAmount(ca.recommendedLoanAmount ?? null);
 
       toast({ title: 'AI score computed', description: `Score: ${Math.round(ca.creditScore)}` });
     } catch (e: any) {
@@ -102,16 +111,16 @@ const FinancialTools = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <Card className="shadow-elevated">
-            <CardHeader>
+              <CardHeader>
               <CardTitle>Financial Tools</CardTitle>
               <CardDescription>Enter minimal details to get your AI credit score</CardDescription>
-            </CardHeader>
+              </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <UILabel htmlFor="farmer-name">Name</UILabel>
                   <Input id="farmer-name" value={name} onChange={(e)=>setName(e.target.value)} placeholder="Jane Doe" />
-                </div>
+                  </div>
                 <div>
                   <UILabel htmlFor="farmer-location">Location (County/Region)</UILabel>
                   <Input id="farmer-location" value={location} onChange={(e)=>setLocation(e.target.value)} placeholder="Nakuru" />
@@ -119,19 +128,19 @@ const FinancialTools = () => {
                 <div>
                   <UILabel htmlFor="land-size">Land Size (hectares)</UILabel>
                   <Input id="land-size" type="number" value={landSize} onChange={(e)=>setLandSize(e.target.value)} placeholder="e.g., 2.5" />
-                </div>
+                      </div>
                 <div>
                   <UILabel htmlFor="crop-type">Primary Crop</UILabel>
                   <Input id="crop-type" value={cropType} onChange={(e)=>setCropType(e.target.value)} placeholder="e.g., maize" />
-                </div>
+                    </div>
                 <div>
                   <UILabel htmlFor="years-experience">Years Farming</UILabel>
                   <Input id="years-experience" type="number" value={yearsExperience} onChange={(e)=>setYearsExperience(e.target.value)} placeholder="e.g., 3" />
-                </div>
+                      </div>
                 <div>
                   <UILabel htmlFor="annual-revenue">Annual Revenue (KES)</UILabel>
                   <Input id="annual-revenue" type="number" value={annualRevenue} onChange={(e)=>setAnnualRevenue(e.target.value)} placeholder="e.g., 120000" />
-                </div>
+                    </div>
                 <div>
                   <UILabel htmlFor="mpesa-in">M-PESA Total Inflows (KES)</UILabel>
                   <Input id="mpesa-in" type="number" value={mpesaIn} onChange={(e)=>setMpesaIn(e.target.value)} placeholder="e.g., 80000" />
@@ -139,12 +148,12 @@ const FinancialTools = () => {
                 <div>
                   <UILabel htmlFor="mpesa-out">M-PESA Total Outflows (KES)</UILabel>
                   <Input id="mpesa-out" type="number" value={mpesaOut} onChange={(e)=>setMpesaOut(e.target.value)} placeholder="e.g., 40000" />
-                </div>
-                <div>
+                  </div>
+                    <div>
                   <UILabel htmlFor="mpesa-count">M-PESA Inflow Count</UILabel>
                   <Input id="mpesa-count" type="number" value={mpesaCount} onChange={(e)=>setMpesaCount(e.target.value)} placeholder="e.g., 120" />
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               <Button onClick={submitToAI} disabled={submitting || !landSize} className="w-full">
                 {submitting ? 'Processing with AI...' : 'Get AI Credit Score'}
@@ -159,7 +168,7 @@ const FinancialTools = () => {
                     </div>
                     <div className="text-right text-sm">
                       {interestRate !== null && <div>Rate: {interestRate}%</div>}
-                      {recommendedLoanAmount !== null && <div>Loan: ${recommendedLoanAmount.toLocaleString()}</div>}
+                      {recommendedLoanAmount !== null && <div>Loan: {formatKes(recommendedLoanAmount)}</div>}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-2">The score has been logged on the server during processing for audit.</div>

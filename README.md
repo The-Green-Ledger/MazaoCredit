@@ -112,9 +112,9 @@ node src/app.js
 ```
 
 ### 3) Frontend (Vite + React)
-```bash
+    ```bash
 cd Sprout-Sell/frontend
-npm install
+    npm install
 
 # Create .env.local
 cat > .env.local <<EOF
@@ -123,7 +123,7 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 EOF
 
-npm run dev
+    npm run dev
 # → http://localhost:5173
 ```
 
