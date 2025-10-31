@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: mazao-credit-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: |
+      npm install
+      cd ../ai && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt || true
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "200"
